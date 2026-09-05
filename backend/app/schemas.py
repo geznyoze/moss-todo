@@ -1,49 +1,77 @@
 import uuid
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+Priority = Literal["none", "low", "med", "high"]
+Status = Literal["backlog", "next", "doing", "done"]
+Recurring = Literal["none", "daily", "weekly", "monthly"]
 
-class TaskListCreate(BaseModel):
+
+class Subtask(BaseModel):
+    id: str = Field(max_length=64)
+    title: str = Field(min_length=1, max_length=500)
+    done: bool = False
+
+
+class ListCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
-    color: str | None = Field(default=None, max_length=32)
-    position: int = 0
+    hue: int = Field(default=96, ge=0, le=359)
+    groups: list[str] = Field(default_factory=list, max_length=50)
+    position: float = 0
 
 
-class TaskListUpdate(BaseModel):
+class ListUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
-    color: str | None = Field(default=None, max_length=32)
-    position: int | None = None
+    hue: int | None = Field(default=None, ge=0, le=359)
+    groups: list[str] | None = Field(default=None, max_length=50)
+    position: float | None = None
 
 
-class TaskListOut(BaseModel):
+class ListOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     name: str
-    color: str | None
-    position: int
+    hue: int
+    groups: list[str]
+    position: float
     created_at: datetime
     updated_at: datetime
 
 
 class TaskCreate(BaseModel):
     title: str = Field(min_length=1, max_length=500)
-    notes: str | None = None
     list_id: uuid.UUID | None = None
-    due_date: date | None = None
-    priority: int = 0
-    position: int = 0
+    group_name: str = Field(default="", max_length=120)
+    notes: str = ""
+    due: date | None = None
+    priority: Priority = "none"
+    status: Status = "backlog"
+    recurring: Recurring = "none"
+    color_h: int = Field(default=96, ge=0, le=359)
+    color_s: int = Field(default=40, ge=0, le=100)
+    color_l: int = Field(default=46, ge=0, le=100)
+    subtasks: list[Subtask] = Field(default_factory=list, max_length=100)
+    position: float = 0
 
 
 class TaskUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=500)
-    notes: str | None = None
     list_id: uuid.UUID | None = None
-    completed: bool | None = None
-    due_date: date | None = None
-    priority: int | None = None
-    position: int | None = None
+    group_name: str | None = Field(default=None, max_length=120)
+    notes: str | None = None
+    done: bool | None = None
+    due: date | None = None
+    priority: Priority | None = None
+    status: Status | None = None
+    recurring: Recurring | None = None
+    color_h: int | None = Field(default=None, ge=0, le=359)
+    color_s: int | None = Field(default=None, ge=0, le=100)
+    color_l: int | None = Field(default=None, ge=0, le=100)
+    subtasks: list[Subtask] | None = Field(default=None, max_length=100)
+    position: float | None = None
 
 
 class TaskOut(BaseModel):
@@ -51,12 +79,18 @@ class TaskOut(BaseModel):
 
     id: uuid.UUID
     list_id: uuid.UUID | None
+    group_name: str
     title: str
-    notes: str | None
-    completed: bool
-    completed_at: datetime | None
-    due_date: date | None
-    priority: int
-    position: int
+    notes: str
+    done: bool
+    due: date | None
+    priority: Priority
+    status: Status
+    recurring: Recurring
+    color_h: int
+    color_s: int
+    color_l: int
+    subtasks: list[Subtask]
+    position: float
     created_at: datetime
     updated_at: datetime

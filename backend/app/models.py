@@ -1,7 +1,21 @@
 import uuid
 from datetime import date, datetime
+from typing import Any
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import (
+    ARRAY,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -9,15 +23,16 @@ from app.db import Base
 
 
 class TaskList(Base):
-    """A user-owned grouping of tasks (the sidebar lists in the design)."""
+    """A user-owned list. `groups` are just names — a task's `group_name` matches one."""
 
     __tablename__ = "task_lists"
 
     id: Mapped[uuid.UUID] = mapped_column(PgUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    color: Mapped[str | None] = mapped_column(String(32))
-    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    hue: Mapped[int] = mapped_column(Integer, nullable=False, default=96)
+    groups: Mapped[list[str]] = mapped_column(ARRAY(String(120)), nullable=False, default=list)
+    position: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -36,13 +51,28 @@ class Task(Base):
     list_id: Mapped[uuid.UUID | None] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("task_lists.id", ondelete="CASCADE")
     )
+    group_name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+
     title: Mapped[str] = mapped_column(String(500), nullable=False)
-    notes: Mapped[str | None] = mapped_column(Text)
-    completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    due_date: Mapped[date | None] = mapped_column(Date)
-    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    done: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    due: Mapped[date | None] = mapped_column(Date)
+    priority: Mapped[str] = mapped_column(String(8), nullable=False, default="none")
+    status: Mapped[str] = mapped_column(String(8), nullable=False, default="backlog")
+    recurring: Mapped[str] = mapped_column(String(8), nullable=False, default="none")
+
+    color_h: Mapped[int] = mapped_column(Integer, nullable=False, default=96)
+    color_s: Mapped[int] = mapped_column(Integer, nullable=False, default=40)
+    color_l: Mapped[int] = mapped_column(Integer, nullable=False, default=46)
+
+    # ponytail: subtasks are a JSONB array, not a table — they are only ever read and
+    # written together with their parent task. Split them out if they ever need querying.
+    subtasks: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+
+    # Fractional index: dropping between two rows takes the midpoint, so a reorder is
+    # one UPDATE instead of renumbering the list.
+    position: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -52,4 +82,4 @@ class Task(Base):
 
     list: Mapped[TaskList | None] = relationship(back_populates="tasks")
 
-    __table_args__ = (Index("ix_tasks_user_completed", "user_id", "completed"),)
+    __table_args__ = (Index("ix_tasks_user_position", "user_id", "position"),)

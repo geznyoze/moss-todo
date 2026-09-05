@@ -7,22 +7,20 @@ from sqlalchemy.orm import Session
 from app.auth import User, current_user
 from app.db import get_db
 from app.models import TaskList
-from app.schemas import TaskListCreate, TaskListOut, TaskListUpdate
+from app.schemas import ListCreate, ListOut, ListUpdate
 
 router = APIRouter(prefix="/api/lists", tags=["lists"])
 
 
-def _get_owned(db: Session, user: User, list_id: uuid.UUID) -> TaskList:
+def _owned(db: Session, user: User, list_id: uuid.UUID) -> TaskList:
     task_list = db.get(TaskList, list_id)
     if task_list is None or task_list.user_id != user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "List not found")
     return task_list
 
 
-@router.get("", response_model=list[TaskListOut])
-def list_lists(
-    db: Session = Depends(get_db), user: User = Depends(current_user)
-) -> list[TaskList]:
+@router.get("", response_model=list[ListOut])
+def list_lists(db: Session = Depends(get_db), user: User = Depends(current_user)) -> list[TaskList]:
     stmt = (
         select(TaskList)
         .where(TaskList.user_id == user.id)
@@ -31,9 +29,9 @@ def list_lists(
     return list(db.scalars(stmt))
 
 
-@router.post("", response_model=TaskListOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ListOut, status_code=status.HTTP_201_CREATED)
 def create_list(
-    payload: TaskListCreate,
+    payload: ListCreate,
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ) -> TaskList:
@@ -44,14 +42,14 @@ def create_list(
     return task_list
 
 
-@router.patch("/{list_id}", response_model=TaskListOut)
+@router.patch("/{list_id}", response_model=ListOut)
 def update_list(
     list_id: uuid.UUID,
-    payload: TaskListUpdate,
+    payload: ListUpdate,
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ) -> TaskList:
-    task_list = _get_owned(db, user, list_id)
+    task_list = _owned(db, user, list_id)
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(task_list, field, value)
     db.commit()
@@ -65,5 +63,5 @@ def delete_list(
     db: Session = Depends(get_db),
     user: User = Depends(current_user),
 ) -> None:
-    db.delete(_get_owned(db, user, list_id))
+    db.delete(_owned(db, user, list_id))
     db.commit()
