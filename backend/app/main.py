@@ -1,9 +1,8 @@
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.auth import User, current_user
 from app.config import get_settings
-from app.routers import lists, tasks
+from app.routers import auth, lists, tasks
 
 settings = get_settings()
 
@@ -17,6 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(tasks.router)
 app.include_router(lists.router)
 
@@ -24,8 +24,3 @@ app.include_router(lists.router)
 @app.get("/api/health", tags=["meta"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
-
-
-@app.get("/api/me", tags=["meta"])
-def me(user: User = Depends(current_user)) -> dict[str, str | None]:
-    return {"id": user.id, "username": user.username, "email": user.email}

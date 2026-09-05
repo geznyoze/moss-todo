@@ -1,0 +1,60 @@
+.shell {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.mark {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--moss);
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-size: 22px;
+  letter-spacing: 0.01em;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
+.switch {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+}
+
+.switch:hover {
+  color: var(--text-nav);
+}

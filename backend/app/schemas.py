@@ -96,3 +96,27 @@ class TaskOut(BaseModel):
     subtasks: list[Subtask]
     created_at: datetime
     updated_at: datetime
+
+
+class Register(BaseModel):
+    username: str = Field(min_length=3, max_length=60)
+    # Enough to catch a typo. Nothing sends mail, so nothing verifies it further.
+    email: str = Field(min_length=3, max_length=255, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    password: str = Field(min_length=8, max_length=200)
+
+
+class Login(BaseModel):
+    username: str
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+
+
+class MeOut(BaseModel):
+    id: str
+    username: str | None
+    email: str | None

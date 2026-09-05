@@ -10,7 +10,8 @@ dependencies = [
     "alembic>=1.14",
     "psycopg[binary]>=3.2",
     "pydantic-settings>=2.6",
-    "pyjwt[crypto]>=2.10",
+    "pyjwt>=2.10",
+    "passlib[argon2]>=1.7.4",
     "httpx>=0.28",
 ]
 

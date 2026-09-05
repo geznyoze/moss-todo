@@ -8,25 +8,12 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://moss:moss@localhost:5432/moss"
 
-    # Accepted `iss` values, comma separated. Keycloak issues tokens under whatever
-    # host the browser reached it on, so a laptop on localhost and a phone on the LAN
-    # address get different issuers from the same realm.
-    keycloak_issuers: str = "http://localhost:8080/realms/moss"
-    # Container-internal realm URL used only to fetch the JWKS, when the public
-    # issuer host is not resolvable from inside the compose network.
-    keycloak_internal_issuer: str = ""
-    keycloak_audience: str = "account"
+    # Signs and verifies our own tokens. The default is a development value; the
+    # production overlay refuses to start without a real one in .env.
+    jwt_secret: str = "dev-only-insecure-secret"
+    jwt_days: int = 30
 
-    @property
-    def issuer_list(self) -> list[str]:
-        return [i.strip().rstrip("/") for i in self.keycloak_issuers.split(",") if i.strip()]
-
-    @property
-    def jwks_url(self) -> str:
-        # Every accepted issuer is the same realm, so any of them serves the same keys.
-        base = self.keycloak_internal_issuer or self.issuer_list[0]
-        return f"{base}/protocol/openid-connect/certs"
-    # Set to false only for local debugging without a running Keycloak.
+    # Set to false only for local debugging, to skip token validation entirely.
     auth_enabled: bool = True
 
     cors_origins: str = "http://localhost:4200"

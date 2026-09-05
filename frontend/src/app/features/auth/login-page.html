@@ -1,0 +1,42 @@
+<main class="shell">
+  <form class="card" (ngSubmit)="submit()">
+    <div class="brand">
+      <span class="mark"></span>
+      <span class="wordmark">Moss</span>
+    </div>
+    <p class="eyebrow">{{ registering() ? 'Create an account' : 'Sign in' }}</p>
+
+    <label class="field">
+      <span class="soft">Username</span>
+      <input id="username" name="username" autocomplete="username" required
+             [ngModel]="username()" (ngModelChange)="username.set($event)">
+    </label>
+
+    @if (registering()) {
+      <label class="field">
+        <span class="soft">Email</span>
+        <input id="email" name="email" type="email" autocomplete="email" required
+               [ngModel]="email()" (ngModelChange)="email.set($event)">
+      </label>
+    }
+
+    <label class="field">
+      <span class="soft">Password</span>
+      <input id="password" name="password" type="password" required
+             [attr.autocomplete]="registering() ? 'new-password' : 'current-password'"
+             [ngModel]="password()" (ngModelChange)="password.set($event)">
+    </label>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <button id="login-submit" type="submit" class="accent" [disabled]="busy()">
+      {{ registering() ? 'Create account' : 'Sign in' }}
+    </button>
+
+    <button type="button" class="switch faint" (click)="toggle()">
+      {{ registering() ? 'Already have an account? Sign in' : 'No account yet? Create one' }}
+    </button>
+  </form>
+</main>
