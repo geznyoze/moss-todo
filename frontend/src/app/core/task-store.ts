@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 
 import { Api } from './api';
-import { DAY, dueMs, iso, today0 } from './dates';
+import { DAY, byDueThenCreated, dueDayMs, iso, today0 } from './dates';
 import {
   ListPatch,
   STATUSES,
@@ -66,16 +66,24 @@ export class TaskStore {
   readonly selected = computed(() => this.tasks().find((t) => t.id === this.selectedId()) ?? null);
   readonly openCount = computed(() => this.tasks().filter((t) => !t.done).length);
 
-  /** Everything in the current scope, done included. */
+  /** Everything in the current scope, done included, soonest due first. */
   readonly scoped = computed(() => {
     const scope = this.scope();
     const t = today0();
     const tasks = this.tasks();
 
-    if (scope === 'today') return tasks.filter((x) => (dueMs(x.due) ?? Infinity) <= t);
-    if (scope === 'upcoming') return tasks.filter((x) => (dueMs(x.due) ?? -Infinity) > t);
-    if (scope === 'all') return tasks;
-    return tasks.filter((x) => x.list_id === scope);
+    const inScope =
+      scope === 'today'
+        ? tasks.filter((x) => (dueDayMs(x.due) ?? Infinity) <= t)
+        : scope === 'upcoming'
+          ? tasks.filter((x) => (dueDayMs(x.due) ?? -Infinity) > t)
+          : scope === 'all'
+            ? tasks
+            : tasks.filter((x) => x.list_id === scope);
+
+    // Sorted here as well as in the API so a locally added task lands in the right
+    // place immediately, without waiting for a refetch.
+    return [...inScope].sort(byDueThenCreated);
   });
 
   /** What the rows actually render — `scoped`, minus done tasks when they are hidden. */
@@ -98,8 +106,8 @@ export class TaskStore {
     const open = this.tasks().filter((x) => !x.done);
     return [
       { id: 'all', name: 'All tasks', count: open.length },
-      { id: 'today', name: 'Today', count: open.filter((x) => (dueMs(x.due) ?? Infinity) <= t).length },
-      { id: 'upcoming', name: 'Upcoming', count: open.filter((x) => (dueMs(x.due) ?? -Infinity) > t).length },
+      { id: 'today', name: 'Today', count: open.filter((x) => (dueDayMs(x.due) ?? Infinity) <= t).length },
+      { id: 'upcoming', name: 'Upcoming', count: open.filter((x) => (dueDayMs(x.due) ?? -Infinity) > t).length },
     ];
   });
 
@@ -117,7 +125,7 @@ export class TaskStore {
     if (this.view() === 'dates') {
       const t = today0();
       const bucket = (task: Task): string => {
-        const ms = dueMs(task.due);
+        const ms = dueDayMs(task.due);
         if (ms === null) return 'none';
         if (ms < t) return 'over';
         if (ms === t) return 'today';
@@ -173,17 +181,10 @@ export class TaskStore {
     }
   }
 
-  /** Position that puts a new task at the end of everything. */
-  private nextPosition(): number {
-    return this.tasks().reduce((max, t) => Math.max(max, t.position), 0) + 1;
-  }
-
   async add(fields: TaskNew): Promise<void> {
     const hue = this.lists().find((l) => l.id === fields.list_id)?.hue ?? 96;
     await this.run(async () => {
-      const created = await this.call(
-        this.api.createTask({ color_h: hue, position: this.nextPosition(), ...fields }),
-      );
+      const created = await this.call(this.api.createTask({ color_h: hue, ...fields }));
       this.tasks.update((tasks) => [...tasks, created]);
     });
   }
@@ -211,7 +212,7 @@ export class TaskStore {
     const { id, created_at, updated_at, ...rest } = task;
     await this.run(async () => {
       const copy = await this.call(
-        this.api.createTask({ ...rest, title: `${task.title} (copy)`, position: task.position + 0.5 }),
+        this.api.createTask({ ...rest, title: `${task.title} (copy)` }),
       );
       this.tasks.update((tasks) => [...tasks, copy]);
       this.selectedId.set(copy.id);
@@ -219,25 +220,14 @@ export class TaskStore {
   }
 
   /**
-   * Drops the dragged task immediately before `target`, taking the midpoint of the
-   * two neighbouring positions so only the moved row needs an UPDATE.
+   * Drop onto empty space in a section or column, or onto another task: the dragged
+   * task adopts that grouping. Rows always render in due order, so there is no
+   * within-group position to move.
    */
-  async moveBefore(target: Task, patch: TaskPatch = {}): Promise<void> {
+  async moveInto(patch: TaskPatch, exceptId?: string): Promise<void> {
     const id = this.dragId();
     this.dragId.set(null);
-    if (!id || id === target.id) return;
-
-    const ordered = [...this.tasks()].sort((a, b) => a.position - b.position);
-    const index = ordered.findIndex((t) => t.id === target.id);
-    const before = ordered[index - 1]?.position ?? target.position - 1;
-    await this.patch(id, { ...patch, position: (before + target.position) / 2 });
-  }
-
-  /** Drop onto empty space in a section or column: keep order, change grouping. */
-  async moveInto(patch: TaskPatch): Promise<void> {
-    const id = this.dragId();
-    this.dragId.set(null);
-    if (id) await this.patch(id, patch);
+    if (id && id !== exceptId) await this.patch(id, patch);
   }
 
   /** Due date a task takes when dropped into a bucket of the dates view. */

@@ -63,18 +63,42 @@ await page.dispatchEvent('.drawer .notes', 'change');
 await page.fill('.drawer .sub-add', 'Export swatches');
 await page.press('.drawer .sub-add', 'Enter');
 await page.waitForSelector('.subtask');
-await page.fill('.drawer input[type=date]', '2026-09-06');
+const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+await page.fill('.drawer input[type=date]', tomorrow);
+await page.waitForTimeout(300);
+await page.click('.drawer .head .x');
+
+// Give a later-created task an earlier due date, so ordering cannot be mistaken
+// for creation order, and put a clock time on it.
+const today = new Date().toISOString().slice(0, 10);
+await page.locator('.row', { hasText: 'Water the ferns' }).locator('.row-body').click();
+await page.waitForSelector('.drawer');
+await page.fill('.drawer input[type=date]', today);
+await page.waitForTimeout(300);
+await page.fill('.drawer input[type=time]', '09:30');
 await page.waitForTimeout(400);
 await page.screenshot({ path: 'shot-list.png' });
 
 // Reload — everything must come back from Postgres, not from memory.
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForSelector('.row');
-console.log('after reload — rows:', await page.$$eval('.row .title', (e) => e.map((x) => x.textContent.trim())));
+const order = await page.$$eval('.row .title', (e) => e.map((x) => x.textContent.trim()));
+console.log('after reload — rows:', order);
+const expected = ['Water the ferns', 'Pick up seed order', 'Return library books'];
+if (JSON.stringify(order) !== JSON.stringify(expected)) {
+  errors.push(`order was ${JSON.stringify(order)}, expected ${JSON.stringify(expected)}`);
+}
 console.log('  done rows:', await page.locator('.title.done').count(),
             '| high badges:', await page.locator('.prio.high').count(),
             '| subtask counts:', await page.$$eval('.row .num', (e) => e.map((x) => x.textContent.trim())),
             '| due labels:', await page.$$eval('.due', (e) => e.map((x) => x.textContent.trim())));
+
+// A task due at a set time still belongs to the day bucket, not a later one.
+await page.click('.tabs button:nth-child(3)');
+await page.waitForSelector('.section');
+const todayBucket = await page.locator('.section').filter({ hasText: 'Today' }).locator('.row .title').allTextContents();
+console.log('Today bucket:', todayBucket.map((x) => x.trim()));
+await page.click('.tabs button:nth-child(1)');
 
 // The drawer's selects must reflect the task, not fall back to their first option.
 await page.locator('.row').first().locator('.row-body').click();

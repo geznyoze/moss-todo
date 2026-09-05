@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import Any
 
 from sqlalchemy import (
@@ -13,6 +13,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    Time,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -57,6 +58,9 @@ class Task(Base):
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     done: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     due: Mapped[date | None] = mapped_column(Date)
+    # Optional clock time on the due date. NULL means "sometime that day", which is why
+    # this is a separate column rather than folding both into one timestamp.
+    due_time: Mapped[time | None] = mapped_column(Time)
     priority: Mapped[str] = mapped_column(String(8), nullable=False, default="none")
     status: Mapped[str] = mapped_column(String(8), nullable=False, default="backlog")
     recurring: Mapped[str] = mapped_column(String(8), nullable=False, default="none")
@@ -69,10 +73,6 @@ class Task(Base):
     # written together with their parent task. Split them out if they ever need querying.
     subtasks: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
 
-    # Fractional index: dropping between two rows takes the midpoint, so a reorder is
-    # one UPDATE instead of renumbering the list.
-    position: Mapped[float] = mapped_column(Float, nullable=False, default=0)
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -82,4 +82,4 @@ class Task(Base):
 
     list: Mapped[TaskList | None] = relationship(back_populates="tasks")
 
-    __table_args__ = (Index("ix_tasks_user_position", "user_id", "position"),)
+    __table_args__ = (Index("ix_tasks_user_due", "user_id", "due"),)

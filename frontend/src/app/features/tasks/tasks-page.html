@@ -197,7 +197,7 @@
 
 <ng-template #badges let-task>
   @if (task.due) {
-    <span class="due" [class.overdue]="overdue(task)">{{ dueLabel(task.due) }}</span>
+    <span class="due" [class.overdue]="overdue(task)">{{ dueLabel(task) }}</span>
   }
   @if (task.priority !== 'none') {
     <span class="prio" [class]="task.priority">{{ priorityName(task) }}</span>

@@ -49,6 +49,14 @@ Demo login: `demo` / `demo`. Self-registration is enabled on the realm.
 - **Two Keycloak URLs.** `KEYCLOAK_ISSUER` is the browser-facing realm URL and must equal
   the token's `iss` claim. `KEYCLOAK_INTERNAL_ISSUER` is only used to fetch the JWKS from
   inside the compose network, where `localhost` would point at the backend container.
+- **Tasks list by due date, then creation time.** Undated tasks sort last; a task due on
+  a date with no time sorts ahead of one with a time that day. The API orders this way and
+  the store sorts again in `scoped`, so a task added locally lands in the right place
+  without waiting for a refetch. There is no manual ordering — dragging a row moves it
+  between groups, lists, board columns and date buckets, but never reorders within one.
+- **`due` is a date; `due_time` is a separate nullable time.** A NULL time means "sometime
+  that day", which one timestamp column could not express. Scopes and date buckets compare
+  whole days via `dueDayMs`; sorting and labels use the exact moment via `dueMs`.
 - **Angular is zoneless and standalone.** State goes in signals; prefer `computed` over
   manual recalculation, and the new `@if` / `@for` control flow over `*ngIf` / `*ngFor`.
 - Commit in small, working increments with a message that says what changed and why.
@@ -67,14 +75,9 @@ app/routers/      tasks.py, lists.py
 `GET /api/tasks` returns the user's whole set; scopes, views, grouping and search are
 computed client-side, because all three views need the same rows anyway.
 
-Two deliberate shortcuts, both marked with a `ponytail:` comment in the code:
-
-- **Subtasks are a JSONB array** on `tasks`, not their own table. They are only ever read
-  and written with their parent. Split them out if they ever need to be queried.
-- **`position` is a fractional index.** Dropping a row between two others stores the
-  midpoint of their positions, so a reorder is one `UPDATE` and never a renumbering pass.
-  Positions can only be halved so many times; if a list is reordered thousands of times in
-  the same spot, add a background renumber.
+**Subtasks are a JSONB array** on `tasks`, not their own table, marked with a
+`ponytail:` comment. They are only ever read and written with their parent; split them
+out if they ever need to be queried.
 
 `AUTH_ENABLED=false` bypasses token validation and pins every request to a
 `dev-user` subject. Local debugging only — never set it in a deployed environment.
@@ -114,14 +117,15 @@ Both still need Postgres and Keycloak; `docker compose up db keycloak` is the ea
 ## Checks
 
 ```bash
-cd frontend && npm test    # store logic: scoping, section building, midpoint reorder
+cd frontend && npm test    # store logic: scoping, section building, due ordering
 ./e2e/run.sh               # real browser against a running stack — needs docker compose up
 ```
 
 `e2e/smoke.mjs` logs in through Keycloak, builds a list, a group and three tasks,
 completes one, edits another in the drawer, then **reloads** and asserts the state came
 back — that reload is the point, since it is what proves nothing lives only in memory.
-It clears the demo account through the API first, so it is repeatable. Browsers come
+**It deletes every task and list on the `demo` account before it starts**, so it is
+repeatable — do not run it against a stack holding work you care about. Browsers come
 from the Playwright image; the host only needs the npm package, which `run.sh` installs.
 Screenshots are written next to the script and are gitignored.
 

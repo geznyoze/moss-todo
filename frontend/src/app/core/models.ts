@@ -16,6 +16,8 @@ export interface Task {
   notes: string;
   done: boolean;
   due: string | null;
+  /** 'HH:MM' when the task is due at a specific time, else null. */
+  due_time: string | null;
   priority: Priority;
   status: Status;
   recurring: Recurring;
@@ -23,7 +25,6 @@ export interface Task {
   color_s: number;
   color_l: number;
   subtasks: Subtask[];
-  position: number;
   created_at: string;
   updated_at: string;
 }

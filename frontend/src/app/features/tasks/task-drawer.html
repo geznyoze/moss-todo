@@ -30,11 +30,15 @@
           </select>
         </label>
 
-        <label class="field">Due
-          <input type="date" [value]="t.due ?? ''" (change)="patch({ due: value($event) || null })" />
+        <label class="field wide">Due
+          <span class="due-inputs">
+            <input type="date" [value]="t.due ?? ''" (change)="setDue(value($event))" />
+            <input type="time" [value]="t.due_time ?? ''" [disabled]="!t.due" title="Optional time"
+                   (change)="patch({ due_time: value($event) || null })" />
+          </span>
         </label>
 
-        <label class="field">Status
+        <label class="field wide">Status
           <select [ngModel]="t.status" [ngModelOptions]="{ standalone: true }"
                   (ngModelChange)="patch({ status: $event, done: $event === 'done' })">
             @for (s of statuses; track s.id) {

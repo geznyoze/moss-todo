@@ -69,6 +69,27 @@
   color: var(--text);
 }
 
+/* Date and time need one full row between them; a half-width cell squeezes the
+   date input down to its calendar icon. */
+.field.wide {
+  grid-column: 1 / -1;
+}
+.due-inputs {
+  display: flex;
+  gap: 6px;
+}
+.due-inputs input[type='date'] {
+  flex: 1;
+  min-width: 0;
+}
+.due-inputs input[type='time'] {
+  flex: none;
+  width: 120px;
+}
+.due-inputs input:disabled {
+  opacity: 0.45;
+}
+
 .block {
   display: flex;
   flex-direction: column;

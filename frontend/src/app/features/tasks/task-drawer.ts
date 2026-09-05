@@ -51,6 +51,11 @@ export class TaskDrawer {
     void this.store.patch(this.task().id, patch);
   }
 
+  /** Clearing the date clears any time with it — a time with no date means nothing. */
+  protected setDue(due: string): void {
+    this.patch(due ? { due } : { due: null, due_time: null });
+  }
+
   protected value(event: Event): string {
     return (event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value;
   }

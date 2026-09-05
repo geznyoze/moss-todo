@@ -3,7 +3,7 @@ import { of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Api } from './api';
-import { DAY, iso, today0 } from './dates';
+import { DAY, dueLabel, iso, today0 } from './dates';
 import { Task, TaskList } from './models';
 import { TaskStore } from './task-store';
 
@@ -16,6 +16,7 @@ function task(overrides: Partial<Task> = {}): Task {
     notes: '',
     done: false,
     due: null,
+    due_time: null,
     priority: 'none',
     status: 'backlog',
     recurring: 'none',
@@ -23,7 +24,6 @@ function task(overrides: Partial<Task> = {}): Task {
     color_s: 40,
     color_l: 46,
     subtasks: [],
-    position: 0,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
     ...overrides,
@@ -121,46 +121,46 @@ describe('sections', () => {
   });
 });
 
-describe('reordering', () => {
-  it('drops between neighbours by taking the midpoint position', async () => {
-    const patchTask = vi.fn((_id: string, patch: object) => of({ ...task(), ...patch }));
-    const store = makeStore({ patchTask } as Partial<Api>);
+describe('ordering', () => {
+  it('lists soonest due first and undated last', () => {
+    const store = makeStore();
+    store.tasks.set([
+      task({ title: 'undated' }),
+      task({ title: 'later', due: iso(t + 3 * DAY) }),
+      task({ title: 'today', due: iso(t) }),
+    ]);
 
-    const a = task({ title: 'a', position: 10 });
-    const b = task({ title: 'b', position: 20 });
-    const dragged = task({ title: 'dragged', position: 99 });
-    store.tasks.set([a, b, dragged]);
-
-    store.dragId.set(dragged.id);
-    await store.moveBefore(b);
-
-    expect(patchTask).toHaveBeenCalledWith(dragged.id, expect.objectContaining({ position: 15 }));
+    expect(store.scoped().map((x) => x.title)).toEqual(['today', 'later', 'undated']);
   });
 
-  it('places before the first row without colliding with it', async () => {
-    const patchTask = vi.fn((_id: string, patch: object) => of({ ...task(), ...patch }));
-    const store = makeStore({ patchTask } as Partial<Api>);
+  it('orders same-day tasks by time, with the untimed one first', () => {
+    const store = makeStore();
+    store.tasks.set([
+      task({ title: 'evening', due: iso(t), due_time: '18:30' }),
+      task({ title: 'all day', due: iso(t) }),
+      task({ title: 'morning', due: iso(t), due_time: '09:00' }),
+    ]);
 
-    const first = task({ title: 'first', position: 10 });
-    const dragged = task({ title: 'dragged', position: 99 });
-    store.tasks.set([first, dragged]);
-
-    store.dragId.set(dragged.id);
-    await store.moveBefore(first);
-
-    expect(patchTask.mock.calls[0][1]).toMatchObject({ position: 9.5 });
+    expect(store.scoped().map((x) => x.title)).toEqual(['all day', 'morning', 'evening']);
   });
 
-  it('ignores a drop onto the dragged row itself', async () => {
-    const patchTask = vi.fn();
-    const store = makeStore({ patchTask } as Partial<Api>);
-    const only = task({ position: 1 });
-    store.tasks.set([only]);
+  it('falls back to creation time when two tasks are due at the same moment', () => {
+    const store = makeStore();
+    store.tasks.set([
+      task({ title: 'newer', due: iso(t), due_time: '09:00', created_at: '2026-02-01T00:00:00Z' }),
+      task({ title: 'older', due: iso(t), due_time: '09:00', created_at: '2026-01-01T00:00:00Z' }),
+    ]);
 
-    store.dragId.set(only.id);
-    await store.moveBefore(only);
+    expect(store.scoped().map((x) => x.title)).toEqual(['older', 'newer']);
+  });
 
-    expect(patchTask).not.toHaveBeenCalled();
+  it('buckets a timed task by its day, not its hour', () => {
+    const store = makeStore();
+    store.view.set('dates');
+    store.tasks.set([task({ due: iso(t), due_time: '23:45' })]);
+
+    const filled = store.sections().filter((s) => s.tasks.length);
+    expect(filled.map((s) => s.title)).toEqual(['Today']);
   });
 });
 
@@ -170,5 +170,13 @@ describe('bucketDue', () => {
     expect(store.bucketDue('today')).toBe(iso(t));
     expect(store.bucketDue('over')).toBe(iso(t - DAY));
     expect(store.bucketDue('none')).toBeNull();
+  });
+});
+
+describe('dueLabel', () => {
+  it('appends a time only when one is set', () => {
+    expect(dueLabel({ due: iso(t), due_time: null })).toBe('Today');
+    expect(dueLabel({ due: iso(t), due_time: '09:00' })).toMatch(/^Today \d/);
+    expect(dueLabel({ due: null, due_time: null })).toBe('');
   });
 });

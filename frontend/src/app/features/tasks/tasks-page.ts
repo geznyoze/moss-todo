@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { Auth } from '../../core/auth';
-import { dueLabel, dueMs, today0 } from '../../core/dates';
+import { dueDayMs, dueLabel, today0 } from '../../core/dates';
 import { Column, Section, TaskStore, View } from '../../core/task-store';
 import { PRIORITIES, Task } from '../../core/models';
 import { TaskDrawer } from './task-drawer';
@@ -46,8 +46,8 @@ export class TasksPage implements OnInit {
   }
 
   protected overdue(t: Task): boolean {
-    const ms = dueMs(t.due);
-    return ms !== null && ms < today0() && !t.done;
+    const day = dueDayMs(t.due);
+    return day !== null && day < today0() && !t.done;
   }
 
   protected priorityName(t: Task): string {
@@ -134,14 +134,14 @@ export class TasksPage implements OnInit {
     event.preventDefault();
   }
 
+  /** Dropping onto a task adopts its grouping; ordering is always by due date. */
   protected async dropOnTask(target: Task, event: DragEvent): Promise<void> {
     event.preventDefault();
     event.stopPropagation();
-    await this.store.moveBefore(target, {
-      group_name: target.group_name,
-      list_id: target.list_id,
-      status: target.status,
-    });
+    await this.store.moveInto(
+      { group_name: target.group_name, list_id: target.list_id, status: target.status },
+      target.id,
+    );
   }
 
   protected async dropOnSection(section: Section, event: DragEvent): Promise<void> {

@@ -21,8 +21,20 @@ def _owned(db: Session, user: User, task_id: uuid.UUID) -> Task:
 
 @router.get("", response_model=list[TaskOut])
 def list_tasks(db: Session = Depends(get_db), user: User = Depends(current_user)) -> list[Task]:
-    """Every task for the user. Scopes, views and search are client-side."""
-    stmt = select(Task).where(Task.user_id == user.id).order_by(Task.position, Task.created_at)
+    """
+    Every task for the user, soonest due first, then oldest first. Undated tasks sort
+    last; a task due on a date with no time sorts ahead of one with a time that day.
+    Scopes, views and search are client-side.
+    """
+    stmt = (
+        select(Task)
+        .where(Task.user_id == user.id)
+        .order_by(
+            Task.due.asc().nulls_last(),
+            Task.due_time.asc().nulls_first(),
+            Task.created_at,
+        )
+    )
     return list(db.scalars(stmt))
 
 
