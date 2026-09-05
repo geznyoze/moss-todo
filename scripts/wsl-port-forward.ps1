@@ -18,7 +18,7 @@
 #>
 [CmdletBinding()]
 param(
-    [int[]] $Ports = @(4200, 8000, 8080),
+    [int[]] $Ports = @(80, 443),
     [switch] $Remove
 )
 
@@ -86,6 +86,7 @@ foreach ($port in $Ports) {
 }
 
 Write-Host ''
-Write-Host "Open this on your phone:  http://${lanIp}:$($Ports[0])"
+Write-Host "Open this on your phone:  https://${lanIp}"
+Write-Host 'The certificate is self-signed, so tap through the browser warning once.'
 Write-Host 'It must be on the same Wi-Fi network as this machine.'
 Write-Host 'If a port says NOT REACHABLE, another firewall (antivirus suite) is likely blocking it.'

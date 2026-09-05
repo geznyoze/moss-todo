@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 
 const errors = [];
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const page = await browser.newPage({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } });
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('response', async (r) => {
@@ -12,7 +12,7 @@ page.on('response', async (r) => {
 });
 
 // Start from an empty account so the run is repeatable.
-const token = await fetch('http://localhost:8080/realms/moss/protocol/openid-connect/token', {
+const token = await fetch('https://localhost/realms/moss/protocol/openid-connect/token', {
   method: 'POST',
   body: new URLSearchParams({
     grant_type: 'password', client_id: 'moss-frontend', username: 'demo', password: 'demo',
@@ -20,13 +20,20 @@ const token = await fetch('http://localhost:8080/realms/moss/protocol/openid-con
 }).then((r) => r.json()).then((r) => r.access_token);
 const auth = { headers: { Authorization: `Bearer ${token}` } };
 for (const kind of ['tasks', 'lists']) {
-  for (const row of await fetch(`http://localhost:8000/api/${kind}`, auth).then((r) => r.json())) {
-    await fetch(`http://localhost:8000/api/${kind}/${row.id}`, { method: 'DELETE', ...auth });
+  for (const row of await fetch(`https://localhost/api/${kind}`, auth).then((r) => r.json())) {
+    await fetch(`https://localhost/api/${kind}/${row.id}`, { method: 'DELETE', ...auth });
   }
 }
 
-await page.goto('http://localhost:4200/', { waitUntil: 'networkidle' });
+await page.goto('https://localhost/', { waitUntil: 'networkidle' });
 console.log('unauthenticated →', new URL(page.url()).origin + new URL(page.url()).pathname);
+
+// The whole reason the stack is behind TLS: crypto.subtle only exists on a secure
+// context, and the PKCE login cannot build its challenge without it.
+const secure = await page.evaluate(() => [window.isSecureContext, typeof crypto?.subtle]);
+console.log('secure context:', secure[0], '| crypto.subtle:', secure[1],
+  '| pkce:', new URL(page.url()).searchParams.get('code_challenge_method'));
+if (!secure[0] || secure[1] !== 'object') errors.push('not a secure context');
 
 await page.fill('#username', 'demo');
 await page.fill('#password', 'demo');

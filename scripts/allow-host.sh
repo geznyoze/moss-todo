@@ -8,12 +8,11 @@
 # Idempotent — safe to re-run, and re-run it whenever your LAN IP changes.
 set -e
 HOST="${1:?usage: allow-host.sh <host-or-ip>}"
-: "${FRONTEND_PORT:=4200}"
 : "${KEYCLOAK_PORT:=8080}"
 : "${KEYCLOAK_ADMIN:=admin}"
 : "${KEYCLOAK_ADMIN_PASSWORD:=admin}"
 KC="http://localhost:${KEYCLOAK_PORT}"
-ORIGIN="http://${HOST}:${FRONTEND_PORT}"
+ORIGIN="https://${HOST}"
 
 TOKEN=$(curl -sf -X POST "$KC/realms/master/protocol/openid-connect/token" \
   -d grant_type=password -d client_id=admin-cli \

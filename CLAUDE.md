@@ -21,18 +21,42 @@ docker-compose.yml
 ## Run it
 
 ```bash
-cp .env.example .env      # once
+cp .env.example .env          # once
+./scripts/make-cert.sh        # once — self-signed cert for the proxy
 docker compose up --build
 ```
 
-| Service            | URL                                             |
-| ------------------ | ----------------------------------------------- |
-| Frontend           | http://localhost:4200                           |
-| API + Swagger docs | http://localhost:8000 · /docs                   |
-| Keycloak admin     | http://localhost:8080 (admin / admin)           |
-| Postgres           | localhost:5432 (moss / moss)                    |
+Everything is served through **one HTTPS origin**. nginx holds the certificate and
+proxies `/api/*` to the backend and `/realms/*` (plus `/resources`, `/admin`, `/js`)
+to Keycloak, so there is no CORS, no mixed content, one certificate to trust and one
+port to expose.
 
-Demo login: `demo` / `demo`. Self-registration is enabled on the realm.
+| Service            | URL                                        |
+| ------------------ | ------------------------------------------ |
+| App                | https://localhost                          |
+| API + Swagger docs | https://localhost/api · http://localhost:8000/docs |
+| Keycloak admin     | https://localhost/admin (admin / admin)    |
+| Postgres           | localhost:5432 (moss / moss)               |
+
+The certificate is self-signed, so every browser warns once. Demo login: `demo` /
+`demo`. Self-registration is enabled on the realm.
+
+### Opening it from a phone
+
+```bash
+./scripts/make-cert.sh 192.168.1.109     # your LAN IP, into the cert's SAN list
+./scripts/allow-host.sh 192.168.1.109    # register the origin with Keycloak
+docker compose up -d --force-recreate frontend
+```
+
+Then, in Windows PowerShell, `scripts/wsl-port-forward.ps1` (it elevates itself) to
+forward ports 80 and 443 into the WSL VM, which NAT mode otherwise hides from the LAN.
+Re-run it after `wsl --shutdown`, since WSL's address can change.
+
+**HTTPS is not optional here.** Browsers expose `crypto.subtle` only on a secure
+context, and `localhost` is the only plain-http origin that qualifies. Over
+`http://<lan-ip>` keycloak-js cannot compute its PKCE challenge and the login fails
+before it starts, with `Web Crypto API is not available`.
 
 ### Opening it from another device
 

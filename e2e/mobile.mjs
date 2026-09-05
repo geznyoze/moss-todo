@@ -2,13 +2,13 @@ import { chromium, devices } from 'playwright';
 
 const browser = await chromium.launch();
 // Non-destructive: uses whatever is already in the account.
-const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+const ctx = await browser.newContext({ ...devices['iPhone 13'], ignoreHTTPSErrors: true });
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 
-await page.goto('http://localhost:4200/', { waitUntil: 'networkidle' });
-if (page.url().includes('8080')) {
+await page.goto('https://localhost/', { waitUntil: 'networkidle' });
+if (page.url().includes('/protocol/openid-connect/auth')) {
   await page.fill('#username', 'demo');
   await page.fill('#password', 'demo');
   await page.click('#kc-login');

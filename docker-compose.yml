@@ -30,9 +30,13 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-moss}
       KC_HTTP_PORT: 8080
       KC_HEALTH_ENABLED: "true"
-      # No KC_HOSTNAME: in dev mode Keycloak takes the hostname from the request, so
-      # tokens are issued for whichever host the browser used — localhost from this
-      # machine, PUBLIC_HOST from a phone. The backend accepts both (KEYCLOAK_ISSUERS).
+      # The reverse proxy terminates TLS; these headers tell Keycloak the browser's
+      # real scheme and host, which is what ends up in `iss` and its redirect URLs.
+      KC_PROXY_HEADERS: xforwarded
+      # No KC_HOSTNAME: Keycloak takes the hostname from the request (or the proxy's
+      # forwarded headers), so tokens are issued for whichever host the browser used —
+      # localhost from this machine, PUBLIC_HOST from a phone. The API accepts both,
+      # see KEYCLOAK_ISSUERS.
       KC_HOSTNAME_STRICT: "false"
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
@@ -53,10 +57,13 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-moss}:${POSTGRES_PASSWORD:-moss}@db:5432/${POSTGRES_DB:-moss}
-      KEYCLOAK_ISSUERS: http://localhost:${KEYCLOAK_PORT:-8080}/realms/moss,http://${PUBLIC_HOST:-localhost}:${KEYCLOAK_PORT:-8080}/realms/moss
+      # Through the proxy from this machine, through the proxy from the LAN, and
+      # straight at Keycloak's own port (which admin scripts and curl use).
+      KEYCLOAK_ISSUERS: https://localhost/realms/moss,https://${PUBLIC_HOST:-localhost}/realms/moss,http://localhost:${KEYCLOAK_PORT:-8080}/realms/moss
       KEYCLOAK_INTERNAL_ISSUER: http://keycloak:8080/realms/moss
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-account}
-      CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-4200},http://${PUBLIC_HOST:-localhost}:${FRONTEND_PORT:-4200}
+      # Same-origin through the proxy, so this only matters for direct API calls.
+      CORS_ORIGINS: https://localhost,https://${PUBLIC_HOST:-localhost}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -69,9 +76,16 @@ services:
     build: ./frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-4200}:80"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+      # nginx resolves its proxy_pass upstreams at startup, so both must exist first.
+      keycloak:
+        condition: service_healthy
 
 volumes:
   db_data:

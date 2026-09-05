@@ -1,15 +1,15 @@
 /**
- * Derived from the URL the app was opened at, so one build serves
- * http://localhost:4200 and http://<lan-ip>:4200 without a rebuild. The API and
- * Keycloak are published on the same host, just different ports.
+ * Everything is served through one origin: the app, `/api/*` and Keycloak's
+ * `/realms/*` all come from wherever this page was loaded. That is what lets the same
+ * build work at https://localhost and at a LAN address, with no CORS and nothing to
+ * rebuild — see frontend/nginx.conf.
  */
-const host = globalThis.location?.hostname ?? 'localhost';
+const origin = globalThis.location?.origin ?? 'https://localhost';
 
 export const environment = {
-  production: false,
-  apiUrl: `http://${host}:8000`,
+  apiUrl: origin,
   keycloak: {
-    url: `http://${host}:8080`,
+    url: origin,
     realm: 'moss',
     clientId: 'moss-frontend',
   },

@@ -4,6 +4,9 @@
 #
 # Usage: ./run.sh [smoke.mjs|mobile.mjs]   (default: smoke.mjs)
 #
+# Talks to https://localhost with certificate checks off — the cert is the self-signed
+# one from scripts/make-cert.sh, the same one a phone accepts once.
+#
 # WARNING: smoke.mjs deletes every task and list on the `demo` account before it
 # starts. mobile.mjs is read-only — it renders the current account at phone size.
 #
@@ -17,4 +20,5 @@ SCRIPT="${1:-smoke.mjs}"
 [ -d node_modules ] || npm install --silent
 exec docker run --rm --network host \
   -v "$PWD:/work" -w /work -u "$(id -u):$(id -g)" -e HOME=/tmp \
+  -e NODE_TLS_REJECT_UNAUTHORIZED=0 \
   mcr.microsoft.com/playwright:v1.63.0-noble node "$SCRIPT"
