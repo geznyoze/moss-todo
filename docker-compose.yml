@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-moss}
       POSTGRES_USER: ${POSTGRES_USER:-moss}
@@ -18,6 +19,7 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
+    restart: unless-stopped
     command: ["start-dev", "--import-realm"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
@@ -48,6 +50,7 @@ services:
 
   backend:
     build: ./backend
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-moss}:${POSTGRES_PASSWORD:-moss}@db:5432/${POSTGRES_DB:-moss}
       KEYCLOAK_ISSUERS: http://localhost:${KEYCLOAK_PORT:-8080}/realms/moss,http://${PUBLIC_HOST:-localhost}:${KEYCLOAK_PORT:-8080}/realms/moss
@@ -64,6 +67,7 @@ services:
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-4200}:80"
     depends_on:
