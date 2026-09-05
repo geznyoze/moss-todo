@@ -5,9 +5,8 @@ all wired together with Docker Compose.
 
 ## Layout
 
-The UI is a port of the `Moss Todo` Claude Design project
-(`claude.ai/design/p/44df71e3-6c30-4883-b29d-e9beda5783d6`) — a dark moss palette,
-Newsreader headings over Instrument Sans body, three views and a task drawer.
+The UI is a port of a Claude Design project — a dark moss palette, Newsreader
+headings over Instrument Sans body, three views and a task drawer.
 
 ```
 backend/     FastAPI + SQLAlchemy 2.0 + Alembic
@@ -35,11 +34,12 @@ port to expose.
 | ------------------ | ------------------------------------------ |
 | App                | https://localhost                          |
 | API + Swagger docs | https://localhost/api · http://localhost:8000/docs |
-| Keycloak admin     | https://localhost/admin (admin / admin)    |
-| Postgres           | localhost:5432 (moss / moss)               |
+| Keycloak admin     | https://localhost/admin                    |
+| Postgres           | localhost:5432                             |
 
-The certificate is self-signed, so every browser warns once. Demo login: `demo` /
-`demo`. Self-registration is enabled on the realm.
+The certificate is self-signed, so every browser warns once. Local credentials come
+from `.env` — see `.env.example` for the development defaults, and the realm JSON for
+the seeded demo account. Self-registration is enabled on the realm.
 
 ### Opening it from a phone
 
