@@ -11,13 +11,19 @@ page.on('response', async (r) => {
   }
 });
 
+// The test account owns itself: registration is open, and a second run just gets a 409.
+const creds = { username: 'demo', email: 'demo@example.com', password: 'demo-password' };
+const post = (path, body) => fetch(`https://localhost/api/auth/${path}`, {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+});
+await post('register', creds);
+
+const wrong = await post('login', { username: creds.username, password: 'not-the-password' });
+console.log('wrong password →', wrong.status);
+if (wrong.status !== 401) errors.push(`wrong password returned ${wrong.status}, expected 401`);
+
 // Start from an empty account so the run is repeatable.
-const token = await fetch('https://localhost/realms/moss/protocol/openid-connect/token', {
-  method: 'POST',
-  body: new URLSearchParams({
-    grant_type: 'password', client_id: 'moss-frontend', username: 'demo', password: 'demo',
-  }),
-}).then((r) => r.json()).then((r) => r.access_token);
+const token = await post('login', creds).then((r) => r.json()).then((r) => r.access_token);
 const auth = { headers: { Authorization: `Bearer ${token}` } };
 for (const kind of ['tasks', 'lists']) {
   for (const row of await fetch(`https://localhost/api/${kind}`, auth).then((r) => r.json())) {
@@ -26,19 +32,14 @@ for (const kind of ['tasks', 'lists']) {
 }
 
 await page.goto('https://localhost/', { waitUntil: 'networkidle' });
-console.log('unauthenticated →', new URL(page.url()).origin + new URL(page.url()).pathname);
+const landed = new URL(page.url()).pathname;
+console.log('unauthenticated →', landed);
+if (landed !== '/login') errors.push(`signed out, expected /login, got ${landed}`);
 
-// The whole reason the stack is behind TLS: crypto.subtle only exists on a secure
-// context, and the PKCE login cannot build its challenge without it.
-const secure = await page.evaluate(() => [window.isSecureContext, typeof crypto?.subtle]);
-console.log('secure context:', secure[0], '| crypto.subtle:', secure[1],
-  '| pkce:', new URL(page.url()).searchParams.get('code_challenge_method'));
-if (!secure[0] || secure[1] !== 'object') errors.push('not a secure context');
-
-await page.fill('#username', 'demo');
-await page.fill('#password', 'demo');
-await page.click('#kc-login');
-await page.waitForSelector('.wordmark', { timeout: 20000 });
+await page.fill('#username', creds.username);
+await page.fill('#password', creds.password);
+await page.click('#login-submit');
+await page.waitForSelector('.topbar', { timeout: 20000 });
 console.log('after login →', page.url());
 
 const rows = page.locator('.row');

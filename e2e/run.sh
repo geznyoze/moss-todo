@@ -1,5 +1,5 @@
 #!/bin/sh
-# Drives the running stack in a real browser: Keycloak login, the whole task
+# Drives the running stack in a real browser: sign-in, the whole task
 # lifecycle, then a reload to prove everything came back from Postgres.
 #
 # Usage: ./run.sh [smoke.mjs|mobile.mjs]   (default: smoke.mjs)

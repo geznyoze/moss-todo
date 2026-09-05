@@ -8,12 +8,12 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 
 await page.goto('https://localhost/', { waitUntil: 'networkidle' });
-if (page.url().includes('/protocol/openid-connect/auth')) {
+if (page.url().endsWith('/login')) {
   await page.fill('#username', 'demo');
-  await page.fill('#password', 'demo');
-  await page.click('#kc-login');
+  await page.fill('#password', 'demo-password');
+  await page.click('#login-submit');
 }
-await page.waitForSelector('.wordmark');
+await page.waitForSelector('.topbar');
 await page.waitForTimeout(800);
 
 const size = page.viewportSize();

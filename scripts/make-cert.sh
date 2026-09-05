@@ -4,9 +4,9 @@
 #   ./scripts/make-cert.sh            # localhost only
 #   ./scripts/make-cert.sh 192.168.1.109
 #
-# HTTPS is not about secrecy here — browsers only expose crypto.subtle, which the
-# PKCE login flow needs, on a secure context, and plain http:// on a LAN address is
-# not one. A self-signed cert is enough to qualify once the device trusts it.
+# It is about secrecy: the login form posts a password, and over plain http on a LAN
+# address that crosses the network in the clear. A self-signed cert is enough once the
+# device trusts it.
 # Re-run it whenever your LAN IP changes; the certs directory is gitignored.
 set -e
 cd "$(dirname "$0")/.."
