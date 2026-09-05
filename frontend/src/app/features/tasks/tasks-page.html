@@ -64,7 +64,8 @@
           <div class="sub">{{ scopeSub }}</div>
         </div>
         <span class="spacer"></span>
-        <div class="progress">
+        <div class="progress" title="Tasks due today or overdue">
+          <span class="num">Today</span>
           <div class="track"><div class="fill" [style.width.%]="store.progress()"></div></div>
           <span class="num">{{ store.progress() }}%</span>
         </div>

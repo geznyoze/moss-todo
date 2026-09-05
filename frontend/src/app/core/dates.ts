@@ -61,3 +61,8 @@ export function byDueThenCreated(a: Due & { created_at: string }, b: Due & { cre
   const bm = dueMs(b) ?? Infinity;
   return am === bm ? a.created_at.localeCompare(b.created_at) : am - bm;
 }
+
+/** Due today or already overdue — what the Today view and the progress bar count. */
+export function dueToday(due: string | null, t = today0()): boolean {
+  return (dueDayMs(due) ?? Infinity) <= t;
+}

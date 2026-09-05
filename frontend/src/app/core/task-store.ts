@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 
 import { Api } from './api';
-import { DAY, byDueThenCreated, dueDayMs, iso, today0 } from './dates';
+import { DAY, byDueThenCreated, dueDayMs, dueToday, iso, today0 } from './dates';
 import {
   ListPatch,
   STATUSES,
@@ -74,7 +74,7 @@ export class TaskStore {
 
     const inScope =
       scope === 'today'
-        ? tasks.filter((x) => (dueDayMs(x.due) ?? Infinity) <= t)
+        ? tasks.filter((x) => dueToday(x.due, t))
         : scope === 'upcoming'
           ? tasks.filter((x) => (dueDayMs(x.due) ?? -Infinity) > t)
           : scope === 'all'
@@ -92,11 +92,13 @@ export class TaskStore {
   );
 
   /**
-   * Measured against `scoped`, not `visible`: hiding done tasks is a view preference and
-   * must not change how much of the scope is reported as finished.
+   * How much of today is done — tasks due today or overdue, whatever scope is showing.
+   * Counted against every such task, not just the visible ones: hiding done tasks is a
+   * view preference and must not change how much of the day is reported as finished.
    */
   readonly progress = computed(() => {
-    const all = this.scoped();
+    const t = today0();
+    const all = this.tasks().filter((x) => dueToday(x.due, t));
     if (!all.length) return 0;
     return Math.round((all.filter((t) => t.done).length / all.length) * 100);
   });
@@ -106,7 +108,7 @@ export class TaskStore {
     const open = this.tasks().filter((x) => !x.done);
     return [
       { id: 'all', name: 'All tasks', count: open.length },
-      { id: 'today', name: 'Today', count: open.filter((x) => (dueDayMs(x.due) ?? Infinity) <= t).length },
+      { id: 'today', name: 'Today', count: open.filter((x) => dueToday(x.due, t)).length },
       { id: 'upcoming', name: 'Upcoming', count: open.filter((x) => (dueDayMs(x.due) ?? -Infinity) > t).length },
     ];
   });

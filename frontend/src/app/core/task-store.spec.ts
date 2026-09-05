@@ -54,9 +54,28 @@ describe('scoping', () => {
     expect(store.visible().map((x) => x.title)).toEqual(['later']);
   });
 
+  it('measures progress over today and overdue only, whatever the scope', () => {
+    const store = makeStore();
+    store.tasks.set([
+      task({ due: iso(t - DAY), done: true }),
+      task({ due: iso(t) }),
+      task({ due: iso(t + DAY), done: true }),
+      task({}),
+    ]);
+
+    expect(store.progress()).toBe(50);
+    store.scope.set('upcoming');
+    expect(store.progress()).toBe(50);
+  });
+
   it('keeps progress steady when done tasks are hidden', () => {
     const store = makeStore();
-    store.tasks.set([task({ done: true }), task({ done: true }), task({}), task({})]);
+    store.tasks.set([
+      task({ due: iso(t), done: true }),
+      task({ due: iso(t), done: true }),
+      task({ due: iso(t) }),
+      task({ due: iso(t) }),
+    ]);
 
     expect(store.progress()).toBe(50);
     store.showDone.set(false);
