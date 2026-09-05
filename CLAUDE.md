@@ -34,6 +34,23 @@ docker compose up --build
 
 Demo login: `demo` / `demo`. Self-registration is enabled on the realm.
 
+### Opening it from another device
+
+The browser derives the API and Keycloak URLs from the address it was opened at
+(`environment.ts` reads `location.hostname`), so one build serves both `localhost` and a
+LAN address with no rebuild. What has to know about the extra host:
+
+1. `PUBLIC_HOST` in `.env` — feeds `KEYCLOAK_ISSUERS` and `CORS_ORIGINS`. Then
+   `docker compose up -d backend`.
+2. `./scripts/allow-host.sh <ip>` — adds the origin's redirect URI and web origin to the
+   Keycloak client. The realm JSON is only imported on Keycloak's first boot, so hosts
+   added later have to go through the admin API.
+3. On WSL2 in NAT mode, Windows must forward the ports into the VM:
+   `scripts/wsl-port-forward.ps1`, from an elevated PowerShell. WSL's IP changes on most
+   restarts, so re-run it after `wsl --shutdown` or a reboot.
+
+Re-do steps 1 and 2 whenever the LAN IP changes.
+
 ## Conventions
 
 - **Every task lives in Postgres.** The frontend never keeps authoritative state:
@@ -46,9 +63,12 @@ Demo login: `demo` / `demo`. Self-registration is enabled on the realm.
 - **Schema changes go through Alembic.** Edit `backend/app/models.py`, then
   `alembic revision --autogenerate -m "..."`. Never edit an applied migration; add a new
   one. `entrypoint.sh` runs `alembic upgrade head` on every backend boot.
-- **Two Keycloak URLs.** `KEYCLOAK_ISSUER` is the browser-facing realm URL and must equal
-  the token's `iss` claim. `KEYCLOAK_INTERNAL_ISSUER` is only used to fetch the JWKS from
-  inside the compose network, where `localhost` would point at the backend container.
+- **Keycloak issuers are an allowlist.** In dev mode Keycloak stamps `iss` with the host
+  the browser used, so a laptop on `localhost` and a phone on the LAN address get
+  different issuers from the same realm and the same signing keys. `KEYCLOAK_ISSUERS` is
+  the comma-separated set the API accepts; anything else is a 401. `KEYCLOAK_INTERNAL_ISSUER`
+  is separate and only fetches the JWKS from inside the compose network, where `localhost`
+  would point at the backend container.
 - **Tasks list by due date, then creation time.** Undated tasks sort last; a task due on
   a date with no time sorts ahead of one with a time that day. The API orders this way and
   the store sorts again in `scoped`, so a task added locally lands in the right place

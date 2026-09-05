@@ -28,8 +28,9 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-moss}
       KC_HTTP_PORT: 8080
       KC_HEALTH_ENABLED: "true"
-      # Issuer must match what the browser sees, or token `iss` fails backend validation.
-      KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8080}
+      # No KC_HOSTNAME: in dev mode Keycloak takes the hostname from the request, so
+      # tokens are issued for whichever host the browser used — localhost from this
+      # machine, PUBLIC_HOST from a phone. The backend accepts both (KEYCLOAK_ISSUERS).
       KC_HOSTNAME_STRICT: "false"
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
@@ -49,10 +50,10 @@ services:
     build: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-moss}:${POSTGRES_PASSWORD:-moss}@db:5432/${POSTGRES_DB:-moss}
-      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/moss}
+      KEYCLOAK_ISSUERS: http://localhost:${KEYCLOAK_PORT:-8080}/realms/moss,http://${PUBLIC_HOST:-localhost}:${KEYCLOAK_PORT:-8080}/realms/moss
       KEYCLOAK_INTERNAL_ISSUER: http://keycloak:8080/realms/moss
       KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-account}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+      CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-4200},http://${PUBLIC_HOST:-localhost}:${FRONTEND_PORT:-4200}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

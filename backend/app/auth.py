@@ -4,6 +4,10 @@ Tokens are RS256-signed by the realm; we fetch the realm JWKS once (PyJWKClient
 caches keys and re-fetches on rotation) and validate signature, expiry and issuer.
 Keycloak puts the API's own audience in `aud` only when a client scope maps it,
 so audience verification is opt-in via KEYCLOAK_AUDIENCE.
+
+The issuer is checked against an allowlist rather than a single value, because
+Keycloak stamps `iss` with the host the browser used — `localhost` from the
+laptop, the LAN address from a phone, same realm and same signing keys.
 """
 
 from dataclasses import dataclass
@@ -54,12 +58,18 @@ def current_user(
             creds.credentials,
             key.key,
             algorithms=["RS256"],
-            issuer=settings.keycloak_issuer,
             audience=settings.keycloak_audience or None,
-            options={"verify_aud": bool(settings.keycloak_audience)},
+            options={
+                "verify_aud": bool(settings.keycloak_audience),
+                # Checked against the allowlist below instead.
+                "verify_iss": False,
+            },
         )
     except jwt.PyJWTError as exc:
         raise _unauthorized(f"Invalid token: {exc}") from exc
+
+    if str(claims.get("iss", "")).rstrip("/") not in settings.issuer_list:
+        raise _unauthorized("Token issuer is not accepted")
 
     sub = claims.get("sub")
     if not sub:
