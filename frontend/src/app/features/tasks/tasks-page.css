@@ -433,6 +433,15 @@ h1 {
 }
 
 @media (width < 900px) {
+  /* Without this the header cannot fit its controls, and a mobile browser widens the
+     layout viewport to the overflow — which drags every fixed element out with it. */
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .brand .count {
+    display: none;
+  }
   .sidebar {
     position: absolute;
     top: 0;
@@ -440,5 +449,12 @@ h1 {
     left: 0;
     z-index: 15;
     box-shadow: 8px 0 24px rgb(0 0 0 / 45%);
+  }
+  .scope,
+  .quick,
+  .sections,
+  .board {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }

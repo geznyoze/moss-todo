@@ -119,6 +119,7 @@ Both still need Postgres and Keycloak; `docker compose up db keycloak` is the ea
 ```bash
 cd frontend && npm test    # store logic: scoping, section building, due ordering
 ./e2e/run.sh               # real browser against a running stack — needs docker compose up
+./e2e/run.sh mobile.mjs    # same stack at phone size; read-only, fails on any overflow
 ```
 
 `e2e/smoke.mjs` logs in through Keycloak, builds a list, a group and three tasks,
@@ -128,6 +129,12 @@ back — that reload is the point, since it is what proves nothing lives only in
 repeatable — do not run it against a stack holding work you care about. Browsers come
 from the Playwright image; the host only needs the npm package, which `run.sh` installs.
 Screenshots are written next to the script and are gitignored.
+
+`e2e/mobile.mjs` renders the app as an iPhone 13 and fails if the document scrolls
+horizontally. That check earns its place: a top bar that could not wrap made the page
+445px wide, and a mobile browser widens its layout viewport to fit overflow — which
+pulled the `position: fixed` drawer out to 445px too. Anything `position: fixed` looks
+correct right up until something else overflows.
 
 There are no backend unit tests. The API is covered end to end by the smoke test; add
 pytest if the routers ever grow logic worth isolating.

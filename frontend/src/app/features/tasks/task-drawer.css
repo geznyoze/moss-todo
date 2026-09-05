@@ -223,9 +223,11 @@ input[type='range'] {
 }
 
 @media (width < 900px) {
+  /* Full screen rather than tucked under the header: the header's height changes
+     once it wraps, and its own close button is enough to get back. */
   .drawer {
     position: fixed;
-    inset: 57px 0 0 0;
+    inset: 0;
     width: 100%;
     max-height: none;
     z-index: 30;
