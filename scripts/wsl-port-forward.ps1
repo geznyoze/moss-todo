@@ -36,12 +36,15 @@ if (-not $isAdmin) {
     return
 }
 
-foreach ($port in $Ports) {
-    # Always clear first, so re-running after a WSL restart replaces a stale address.
+# Clear every port this project has ever published, not just the ones being added
+# now. Re-running after a WSL restart must replace a stale address, and changing the
+# published ports must not leave a forward and a firewall hole pointing at a dead one.
+$knownPorts = @(80, 443, 4200, 8000, 8080) + $Ports | Sort-Object -Unique
+foreach ($port in $knownPorts) {
     netsh interface portproxy delete v4tov4 listenport=$port listenaddress=0.0.0.0 2>$null | Out-Null
-    Get-NetFirewallRule -DisplayName "Moss Todo $port" -ErrorAction SilentlyContinue |
-        Remove-NetFirewallRule
 }
+Get-NetFirewallRule -DisplayName 'Moss Todo *' -ErrorAction SilentlyContinue |
+    Remove-NetFirewallRule
 
 if ($Remove) {
     Write-Host 'Removed the Moss Todo port-forward and firewall rules.'
