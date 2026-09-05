@@ -1,0 +1,103 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark"></span>
+      <span>Moss</span>
+    </div>
+
+    <nav class="lists">
+      <button type="button" class="list-item" [class.active]="store.selectedListId() === null"
+              (click)="selectList(null)">
+        All tasks
+      </button>
+
+      @for (list of store.lists(); track list.id) {
+        <div class="list-row">
+          <button type="button" class="list-item" [class.active]="store.selectedListId() === list.id"
+                  (click)="selectList(list.id)">
+            {{ list.name }}
+          </button>
+          <button type="button" class="icon danger" title="Delete list"
+                  (click)="store.removeList(list.id)">×</button>
+        </div>
+      }
+    </nav>
+
+    <form class="new-list" (ngSubmit)="addList()">
+      <input placeholder="New list" [ngModel]="newListName()" (ngModelChange)="newListName.set($event)"
+             name="newList" />
+      <button type="submit" class="icon">+</button>
+    </form>
+
+    <div class="account">
+      <span class="who">{{ auth.username() ?? 'Signed in' }}</span>
+      <button type="button" class="link" (click)="auth.logout()">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="head">
+      <div>
+        <h1>{{ listName(store.selectedListId()) ?? 'All tasks' }}</h1>
+        <p class="sub">{{ store.remaining() }} remaining · {{ store.doneCount() }} done</p>
+      </div>
+      <input class="search" type="search" placeholder="Search tasks"
+             [ngModel]="store.search()" (ngModelChange)="store.search.set($event)" name="search" />
+    </header>
+
+    @if (store.error(); as error) {
+      <p class="error" role="alert">{{ error }}</p>
+    }
+
+    <form class="composer" (ngSubmit)="addTask()">
+      <input class="title" placeholder="Add a task…" required
+             [ngModel]="draftTitle()" (ngModelChange)="draftTitle.set($event)" name="title" />
+      <input class="date" type="date" [ngModel]="draftDue()" (ngModelChange)="draftDue.set($event)"
+             name="due" />
+      <button type="submit" class="primary">Add</button>
+    </form>
+
+    <div class="filters">
+      @for (option of ['all', 'active', 'completed']; track option) {
+        <button type="button" class="chip" [class.active]="store.filter() === option"
+                (click)="setFilter($any(option))">{{ option }}</button>
+      }
+      @if (store.doneCount() > 0) {
+        <button type="button" class="link clear" (click)="store.clearCompleted()">Clear completed</button>
+      }
+    </div>
+
+    @if (store.loading()) {
+      <p class="empty">Loading…</p>
+    } @else if (store.visibleTasks().length === 0) {
+      <p class="empty">Nothing here yet.</p>
+    } @else {
+      <ul class="tasks">
+        @for (task of store.visibleTasks(); track task.id) {
+          <li class="task" [class.done]="task.completed">
+            <input type="checkbox" [checked]="task.completed" (change)="store.toggle(task)"
+                   [attr.aria-label]="'Toggle ' + task.title" />
+
+            @if (editingId() === task.id) {
+              <input class="edit" [ngModel]="editingTitle()" (ngModelChange)="editingTitle.set($event)"
+                     name="edit" (blur)="commitEdit(task)" (keydown.enter)="commitEdit(task)"
+                     (keydown.escape)="cancelEdit()" autofocus />
+            } @else {
+              <button type="button" class="task-title" (click)="startEdit(task)">{{ task.title }}</button>
+            }
+
+            @if (due(task); as d) {
+              <span class="due" [class.overdue]="d.overdue">{{ d.label }}</span>
+            }
+            @if (!store.selectedListId() && listName(task.list_id); as name) {
+              <span class="tag">{{ name }}</span>
+            }
+
+            <button type="button" class="icon danger" title="Delete task"
+                    (click)="store.remove(task.id)">×</button>
+          </li>
+        }
+      </ul>
+    }
+  </main>
+</div>

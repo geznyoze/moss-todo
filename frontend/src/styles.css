@@ -1,0 +1,53 @@
+/* Design tokens. Placeholder palette until the Moss Todo design is imported. */
+:root {
+  color-scheme: light;
+
+  --moss-50: #f3f6f1;
+  --moss-100: #e4ebe0;
+  --moss-300: #a9bfa0;
+  --moss-500: #6b8f5e;
+  --moss-600: #557547;
+  --moss-700: #3f5a34;
+
+  --bg: var(--moss-50);
+  --surface: #ffffff;
+  --border: #dfe4da;
+  --text: #1f2a1c;
+  --muted: #6d7a68;
+  --danger: #b4443a;
+
+  --radius: 12px;
+  --shadow: 0 1px 2px rgb(31 42 28 / 6%), 0 8px 24px rgb(31 42 28 / 6%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--moss-500);
+  outline-offset: 2px;
+}

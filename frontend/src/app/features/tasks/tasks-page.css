@@ -1,0 +1,242 @@
+.shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 16px;
+  background: var(--moss-100);
+  border-right: 1px solid var(--border);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  font-size: 17px;
+}
+.mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--moss-600);
+}
+.lists {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.list-row {
+  display: flex;
+  align-items: center;
+}
+.list-item {
+  flex: 1;
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+.list-item:hover {
+  background: rgb(255 255 255 / 60%);
+}
+.list-item.active {
+  background: var(--surface);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+.new-list {
+  display: flex;
+  gap: 6px;
+}
+.new-list input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Main column */
+.main {
+  padding: 32px clamp(16px, 5vw, 56px);
+  max-width: 880px;
+  width: 100%;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+h1 {
+  margin: 0;
+  font-size: 26px;
+}
+.sub {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.search,
+.composer input {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.composer {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.composer .title {
+  flex: 1;
+}
+.primary {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--moss-600);
+  color: #fff;
+  font-weight: 600;
+}
+.primary:hover {
+  background: var(--moss-700);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.chip {
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  text-transform: capitalize;
+  font-size: 13px;
+}
+.chip.active {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+.clear {
+  margin-left: auto;
+}
+
+/* Task rows */
+.tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--border);
+}
+.task:first-child {
+  border-top: 0;
+}
+.task input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--moss-600);
+}
+.task-title,
+.edit {
+  flex: 1;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+}
+.task.done .task-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.due,
+.tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--moss-100);
+  color: var(--moss-700);
+  white-space: nowrap;
+}
+.due.overdue {
+  background: #f6e2e0;
+  color: var(--danger);
+}
+
+.icon {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1;
+  padding: 4px 7px;
+  border-radius: 8px;
+}
+.icon:hover {
+  background: var(--moss-100);
+}
+.icon.danger:hover {
+  color: var(--danger);
+}
+.link {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 13px;
+  padding: 0;
+  text-align: left;
+}
+.empty {
+  color: var(--muted);
+  padding: 24px 0;
+}
+.error {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f6e2e0;
+  color: var(--danger);
+}
+
+@media (width < 720px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
