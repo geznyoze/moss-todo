@@ -1,0 +1,31 @@
+# One origin for everything: the app, the API and Keycloak — the same shape as
+# nginx.conf, which still serves local development. The difference is the
+# certificate: Caddy gets one from Let's Encrypt and renews it on its own, so a
+# deployed stack has no self-signed cert to make, mount or trust.
+
+{$PUBLIC_HOST} {
+	encode zstd gzip
+
+	# Not handle_path: the API's routes include the /api prefix, so stripping it
+	# here would 404 every request.
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# Keycloak's public paths: realm endpoints and the login page's own assets.
+	# /admin is deliberately missing — the admin console is reached through an SSH
+	# tunnel, not published on the internet with a password that has to hold.
+	@keycloak path /realms/* /resources/* /js/*
+	handle @keycloak {
+		reverse_proxy keycloak:8080
+	}
+
+	handle {
+		root * /srv
+		@static path *.js *.css *.woff *.woff2 *.png *.svg *.ico
+		header @static Cache-Control "public, max-age=2592000, immutable"
+		# Angular is a single-page app: unknown paths fall through to index.html.
+		try_files {path} /index.html
+		file_server
+	}
+}

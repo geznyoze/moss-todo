@@ -75,6 +75,55 @@ LAN address with no rebuild. What has to know about the extra host:
 
 Re-do steps 1 and 2 whenever the LAN IP changes.
 
+## Deploying it
+
+Free, reachable from anywhere, one command to update. The target is an **Oracle Cloud
+Always Free** ARM VM (2 OCPU / 12 GB as of mid-2026 — the whole stack fits several
+times over) with a free **DuckDNS** subdomain and **Caddy** for a real Let's Encrypt
+certificate. The PaaS free tiers do not fit this stack: Keycloak is a JVM app that
+wants a persistent database, and Render's free Postgres is deleted 30 days after it is
+created while its web services sleep after 15 idle minutes.
+
+`docker-compose.prod.yml` layers over the base file and changes three things: Keycloak
+leaves dev mode and pins its hostname, the frontend is served by the Caddy stage of
+`frontend/Dockerfile` instead of the nginx one, and the realm is imported from
+`keycloak/realm-moss.prod.json`.
+
+```bash
+# on the server, once
+PUBLIC_HOST=moss-todo.duckdns.org ./scripts/prep-realm.sh
+cp .env.example .env            # then set PUBLIC_HOST and real passwords
+
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Updating later is `git pull` and that same `up -d --build`.
+
+- **Open 80 and 443 twice.** The OCI security list *and* the VM's own iptables, whose
+  default chain drops everything. Forgetting the second is the usual "it is running
+  but nothing connects".
+- **`prep-realm.sh` has to run before the first boot.** Keycloak imports a realm only
+  when its database is empty. The script rewrites the dev realm's `https://localhost`
+  origins to the real one, sets `sslRequired`, and drops the `demo`/`demo` user, which
+  is fine on localhost and indefensible on a public address. If the generated file is
+  missing, Docker creates a *directory* at the mount path and the import silently does
+  nothing — so a login that fails with "unknown realm" means this step was skipped.
+- **The admin console is not published.** The Caddyfile proxies `/realms`, `/resources`
+  and `/js` but not `/admin`; reach it with `ssh -L 8080:localhost:8080 <server>` and
+  open `http://localhost:8080`. Same tunnel is what makes `scripts/allow-host.sh`
+  usable against a deployed stack.
+- **Only the proxy is published.** Postgres, Keycloak and the API bind to `127.0.0.1`
+  in the base compose file, so a public IP exposes 80 and 443 and nothing else.
+- **Certificates live in the `caddy_data` volume.** Deleting it makes Caddy re-request
+  every certificate on the next boot, which Let's Encrypt rate-limits.
+- **Nothing backs this up but you.** `scripts/backup-db.sh` from cron; it dumps the
+  Keycloak database too, because task rows are owned by Keycloak subject and are
+  orphaned without the users. Copy the dumps off the box now and then — Oracle
+  reclaims idle Always Free instances.
+
+Local development is untouched: `docker compose up` still builds the nginx stage with
+the self-signed cert, and the LAN/phone workflow above still works.
+
 ## Conventions
 
 - **Every task lives in Postgres.** The frontend never keeps authoritative state:
