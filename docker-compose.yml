@@ -7,72 +7,32 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-moss}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-moss}
     ports:
-      # Loopback only. Published to the host these three would put Postgres, the
-      # Keycloak admin console and the API straight on the internet of any machine
-      # with a public IP; everything the browser needs goes through the proxy.
+      # Loopback only. Published to the host, Postgres and the API would sit straight
+      # on the internet of any machine with a public IP; everything the browser needs
+      # goes through the proxy.
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./db/init-keycloak-db.sql:/docker-entrypoint-initdb.d/10-keycloak.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-moss} -d ${POSTGRES_DB:-moss}"]
       interval: 5s
       timeout: 5s
       retries: 20
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.0
-    restart: unless-stopped
-    command: ["start-dev", "--import-realm"]
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://db:5432/keycloak
-      KC_DB_USERNAME: ${POSTGRES_USER:-moss}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-moss}
-      KC_HTTP_PORT: 8080
-      KC_HEALTH_ENABLED: "true"
-      # The reverse proxy terminates TLS; these headers tell Keycloak the browser's
-      # real scheme and host, which is what ends up in `iss` and its redirect URLs.
-      KC_PROXY_HEADERS: xforwarded
-      # No KC_HOSTNAME: Keycloak takes the hostname from the request (or the proxy's
-      # forwarded headers), so tokens are issued for whichever host the browser used —
-      # localhost from this machine, PUBLIC_HOST from a phone. The API accepts both,
-      # see KEYCLOAK_ISSUERS.
-      KC_HOSTNAME_STRICT: "false"
-    ports:
-      - "127.0.0.1:${KEYCLOAK_PORT:-8080}:8080"  # loopback only, see db
-    volumes:
-      - ./keycloak/realm-moss.json:/opt/keycloak/data/import/realm-moss.json:ro
-    depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\nHost: localhost\\nConnection: close\\n\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
-
   backend:
     build: ./backend
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-moss}:${POSTGRES_PASSWORD:-moss}@db:5432/${POSTGRES_DB:-moss}
-      # Through the proxy from this machine, through the proxy from the LAN, and
-      # straight at Keycloak's own port (which admin scripts and curl use).
-      KEYCLOAK_ISSUERS: https://localhost/realms/moss,https://${PUBLIC_HOST:-localhost}/realms/moss,http://localhost:${KEYCLOAK_PORT:-8080}/realms/moss
-      KEYCLOAK_INTERNAL_ISSUER: http://keycloak:8080/realms/moss
-      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-account}
+      # Signs and verifies our own tokens. The development default in .env.example is
+      # fine on localhost; the prod overlay refuses to start without a real one.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret}
       # Same-origin through the proxy, so this only matters for direct API calls.
       CORS_ORIGINS: https://localhost,https://${PUBLIC_HOST:-localhost}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"  # loopback only, see db
     depends_on:
       db:
-        condition: service_healthy
-      keycloak:
         condition: service_healthy
 
   frontend:
@@ -84,11 +44,9 @@ services:
     volumes:
       - ./certs:/etc/nginx/certs:ro
     depends_on:
+      # nginx resolves its proxy_pass upstreams at startup, so the backend must exist first.
       backend:
         condition: service_started
-      # nginx resolves its proxy_pass upstreams at startup, so both must exist first.
-      keycloak:
-        condition: service_healthy
 
 volumes:
   db_data:

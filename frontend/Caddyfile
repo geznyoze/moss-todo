@@ -1,5 +1,5 @@
-# One origin for everything: the app, the API and Keycloak — the same shape as
-# nginx.conf, which still serves local development.
+# One origin for the app and the API — the same shape as nginx.conf, which still
+# serves local development.
 #
 # SITE_ADDRESS decides who holds the certificate:
 #   a hostname   Caddy gets one from Let's Encrypt and renews it (docker-compose.prod.yml)
@@ -12,21 +12,6 @@
 	# here would 404 every request.
 	handle /api/* {
 		reverse_proxy backend:8000
-	}
-
-	# Keycloak's public paths: realm endpoints and the login page's own assets.
-	# /admin is deliberately missing — the admin console is reached through an SSH
-	# tunnel, not published on the internet with a password that has to hold.
-	@keycloak path /realms/* /resources/* /js/*
-	handle @keycloak {
-		reverse_proxy keycloak:8080 {
-			# Keycloak builds its issuer and redirect URLs from this. The browser
-			# always reaches us over https — directly here, or through Tailscale
-			# Funnel, which terminates TLS and hands us plain http on :80. Without
-			# pinning it, that second case would mint http:// issuers and every
-			# token would fail validation.
-			header_up X-Forwarded-Proto https
-		}
 	}
 
 	handle {

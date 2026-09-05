@@ -2,27 +2,15 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
-# Three things change: Keycloak leaves dev mode and pins its hostname, the frontend
-# is served by Caddy with a real Let's Encrypt certificate instead of nginx with a
-# self-signed one, and the realm comes from the file scripts/prep-realm.sh writes.
+# Two things change: the frontend is served by Caddy with a real Let's Encrypt
+# certificate instead of nginx with a self-signed one, and the token secret has to be
+# a real one.
 services:
-  keycloak:
-    # Production mode. Without --optimized, so the image runs its own build step on
-    # first boot: ~30s once, against keeping a second Dockerfile in sync forever.
-    command: ["start", "--import-realm"]
-    environment:
-      # One public hostname, so one issuer — the multi-issuer allowlist the base file
-      # carries exists for LAN testing, where the browser reaches Keycloak by IP.
-      KC_HOSTNAME: https://${PUBLIC_HOST}
-      KC_HOSTNAME_STRICT: "true"
-      # Caddy terminates TLS and forwards the real scheme in X-Forwarded-Proto.
-      KC_HTTP_ENABLED: "true"
-    volumes:
-      - ./keycloak/realm-moss.prod.json:/opt/keycloak/data/import/realm-moss.json:ro
-
   backend:
     environment:
-      KEYCLOAK_ISSUERS: https://${PUBLIC_HOST}/realms/moss
+      # No default on purpose. The development secret is public, in .env.example, and
+      # anyone holding it can mint a token for any account.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env — openssl rand -hex 32}
       CORS_ORIGINS: https://${PUBLIC_HOST}
 
   frontend:

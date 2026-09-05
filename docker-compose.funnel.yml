@@ -3,9 +3,9 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
 #                  -f docker-compose.funnel.yml up -d --build
 #
-# Layered on top of the prod overlay, which already puts Keycloak in production
-# mode. Funnel dials out from this machine, so there is no port to forward, no
-# certificate to make and no server to rent: Tailscale answers on the public
+# Layered on top of the prod overlay. Funnel dials out from this machine, so there
+# is no port to forward, no certificate to make and no server to rent: Tailscale
+# answers on the public
 # internet at <hostname>.<tailnet>.ts.net with a real certificate and proxies
 # inward. PUBLIC_HOST is that ts.net name.
 services:

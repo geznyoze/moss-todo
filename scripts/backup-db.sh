@@ -1,8 +1,8 @@
 #!/bin/sh
 # Nightly dump of both databases. Free hosting backs up nothing, and Oracle reclaims
 # idle Always Free instances — a dump you can restore anywhere is what makes that
-# survivable. pg_dumpall covers the keycloak database too: without its users, every
-# task row is orphaned, since ownership is by Keycloak subject.
+# survivable. pg_dumpall rather than pg_dump: accounts and tasks are one database now,
+# but roles and any future database come along too.
 #
 #   crontab -e:  0 3 * * * cd /srv/moss-todo && ./scripts/backup-db.sh
 #
