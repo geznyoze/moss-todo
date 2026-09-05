@@ -124,6 +124,46 @@ Updating later is `git pull` and that same `up -d --build`.
 Local development is untouched: `docker compose up` still builds the nginx stage with
 the self-signed cert, and the LAN/phone workflow above still works.
 
+### Without a server: Tailscale Funnel
+
+`docker-compose.funnel.yml` layers on top of the prod overlay and publishes the stack
+straight from this machine — no VPS, no DNS record, no certificate, and no port
+forwarding, since Funnel dials out rather than being connected to. Tailscale answers
+on the public internet at `<TS_HOSTNAME>.<tailnet>.ts.net` with a real certificate and
+proxies inward to Caddy, which serves plain http on the compose network. The trade is
+uptime: the app is reachable only while this machine is running.
+
+In the Tailscale admin console, once:
+
+1. **DNS → HTTPS Certificates → Enable.** Funnel will not start without it.
+2. **Access controls** must grant the node the funnel attribute:
+   `"nodeAttrs": [{"target": ["autogroup:member"], "attr": ["funnel"]}]`
+3. **Settings → Keys →** generate a *reusable* auth key.
+
+Then here:
+
+```bash
+# PUBLIC_HOST is the funnel address — hostname plus the tailnet name from the DNS page
+PUBLIC_HOST=moss-todo.tailnet-name.ts.net ./scripts/prep-realm.sh
+# .env: PUBLIC_HOST, TS_HOSTNAME, TS_AUTHKEY, and real passwords
+
+docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+               -f docker-compose.funnel.yml up -d --build
+docker compose logs tailscale     # prints the public URL once it is serving
+```
+
+- **The scheme is pinned in the Caddyfile.** Funnel terminates TLS and forwards plain
+  http, so `header_up X-Forwarded-Proto https` on the Keycloak proxy is what stops
+  Keycloak minting `http://` issuers that no token can then validate.
+- **Turn off key expiry on the node** in the admin console. The auth key only matters
+  for the first boot — the state lives in the `ts_state` volume — but the node key
+  itself expires on the default schedule and takes the site down with it.
+- **`TS_USERSPACE` is on**, so the container needs neither `/dev/net/tun` nor
+  `NET_ADMIN`; it only proxies inward. That is also what makes it work under WSL.
+- **This replaces the LAN workflow, it does not extend it.** `wsl-port-forward.ps1`,
+  `make-cert.sh` and the self-signed certificate are all unnecessary while the funnel
+  is up — the phone reaches the same public URL as everything else.
+
 ## Conventions
 
 - **Every task lives in Postgres.** The frontend never keeps authoritative state:

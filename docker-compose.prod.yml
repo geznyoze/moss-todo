@@ -30,9 +30,10 @@ services:
       context: ./frontend
       target: caddy
     environment:
-      # Caddy's site address. Also what it asks Let's Encrypt to certify, so it has
-      # to be a real name resolving to this machine — not an IP.
-      PUBLIC_HOST: ${PUBLIC_HOST:?set PUBLIC_HOST to your domain in .env}
+      # Caddy's site address. A hostname here means Caddy asks Let's Encrypt to
+      # certify it, so it has to be a real name resolving to this machine — not an
+      # IP. docker-compose.funnel.yml overrides it with :80 instead.
+      SITE_ADDRESS: ${PUBLIC_HOST:?set PUBLIC_HOST to your domain in .env}
     volumes:
       # Issued certificates and the ACME account live here. Without it every restart
       # asks Let's Encrypt for a new certificate and eventually gets rate-limited.

@@ -1,0 +1,38 @@
+# Publish the stack through Tailscale Funnel instead of a public server.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#                  -f docker-compose.funnel.yml up -d --build
+#
+# Layered on top of the prod overlay, which already puts Keycloak in production
+# mode. Funnel dials out from this machine, so there is no port to forward, no
+# certificate to make and no server to rent: Tailscale answers on the public
+# internet at <hostname>.<tailnet>.ts.net with a real certificate and proxies
+# inward. PUBLIC_HOST is that ts.net name.
+services:
+  frontend:
+    environment:
+      # Tailscale terminates TLS, so Caddy serves plain http on the compose
+      # network and asks Let's Encrypt for nothing.
+      SITE_ADDRESS: ":80"
+
+  tailscale:
+    image: tailscale/tailscale:stable
+    restart: unless-stopped
+    hostname: ${TS_HOSTNAME:-moss-todo}
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:?create a reusable auth key at login.tailscale.com/admin/settings/keys}
+      TS_HOSTNAME: ${TS_HOSTNAME:-moss-todo}
+      TS_STATE_DIR: /var/lib/tailscale
+      # No TUN device and no NET_ADMIN needed: this node only proxies inward, and
+      # userspace networking is what makes that work unprivileged under WSL.
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/funnel.json
+    volumes:
+      - ts_state:/var/lib/tailscale
+      - ./tailscale/funnel.json:/config/funnel.json:ro
+    depends_on:
+      frontend:
+        condition: service_started
+
+volumes:
+  ts_state:

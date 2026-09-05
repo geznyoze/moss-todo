@@ -1,9 +1,11 @@
 # One origin for everything: the app, the API and Keycloak — the same shape as
-# nginx.conf, which still serves local development. The difference is the
-# certificate: Caddy gets one from Let's Encrypt and renews it on its own, so a
-# deployed stack has no self-signed cert to make, mount or trust.
+# nginx.conf, which still serves local development.
+#
+# SITE_ADDRESS decides who holds the certificate:
+#   a hostname   Caddy gets one from Let's Encrypt and renews it (docker-compose.prod.yml)
+#   :80          something in front terminates TLS (docker-compose.funnel.yml)
 
-{$PUBLIC_HOST} {
+{$SITE_ADDRESS} {
 	encode zstd gzip
 
 	# Not handle_path: the API's routes include the /api prefix, so stripping it
@@ -17,7 +19,14 @@
 	# tunnel, not published on the internet with a password that has to hold.
 	@keycloak path /realms/* /resources/* /js/*
 	handle @keycloak {
-		reverse_proxy keycloak:8080
+		reverse_proxy keycloak:8080 {
+			# Keycloak builds its issuer and redirect URLs from this. The browser
+			# always reaches us over https — directly here, or through Tailscale
+			# Funnel, which terminates TLS and hands us plain http on :80. Without
+			# pinning it, that second case would mint http:// issuers and every
+			# token would fail validation.
+			header_up X-Forwarded-Proto https
+		}
 	}
 
 	handle {
