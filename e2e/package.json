@@ -1,0 +1,7 @@
+{
+  "name": "moss-todo-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": { "smoke": "./run.sh" },
+  "devDependencies": { "playwright": "1.63.0" }
+}

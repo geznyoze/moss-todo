@@ -1,10 +1,12 @@
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { PRESETS, PRIORITIES, RECURS, STATUSES, Subtask, Task } from '../../core/models';
 import { TaskStore } from '../../core/task-store';
 
 @Component({
   selector: 'app-task-drawer',
+  imports: [FormsModule],
   templateUrl: './task-drawer.html',
   styleUrl: './task-drawer.css',
 })

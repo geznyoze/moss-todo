@@ -170,7 +170,8 @@
                            [ngModel]="sectionDrafts()[sec.key] ?? ''"
                            (ngModelChange)="setSectionDraft(sec.key, $event)" />
                   </form>
-                } @else if (!sec.tasks.length) {
+                }
+                @if (!sec.tasks.length) {
                   <p class="section-empty">Nothing here yet.</p>
                 }
               }

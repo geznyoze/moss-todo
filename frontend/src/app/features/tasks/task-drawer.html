@@ -12,7 +12,8 @@
 
       <div class="grid">
         <label class="field">List
-          <select [value]="t.list_id ?? ''" (change)="patch({ list_id: value($event) || null, group_name: '' })">
+          <select [ngModel]="t.list_id ?? ''" [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="patch({ list_id: $event || null, group_name: '' })">
             <option value="">No list</option>
             @for (l of store.lists(); track l.id) {
               <option [value]="l.id">{{ l.name }}</option>
@@ -21,7 +22,8 @@
         </label>
 
         <label class="field">Group
-          <select [value]="t.group_name" (change)="patch({ group_name: value($event) })">
+          <select [ngModel]="t.group_name" [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="patch({ group_name: $event })">
             @for (g of groupOptions(); track g) {
               <option [value]="g">{{ g || 'Ungrouped' }}</option>
             }
@@ -33,7 +35,8 @@
         </label>
 
         <label class="field">Status
-          <select [value]="t.status" (change)="patch({ status: $any(value($event)), done: value($event) === 'done' })">
+          <select [ngModel]="t.status" [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="patch({ status: $event, done: $event === 'done' })">
             @for (s of statuses; track s.id) {
               <option [value]="s.id">{{ s.name }}</option>
             }

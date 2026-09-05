@@ -14,6 +14,7 @@ backend/     FastAPI + SQLAlchemy 2.0 + Alembic
 frontend/    Angular 22 (standalone, zoneless, signals) + keycloak-js
 keycloak/    realm-moss.json — imported on first Keycloak boot
 db/          Postgres init SQL (creates the separate `keycloak` database)
+e2e/         browser smoke test against the running stack
 docker-compose.yml
 ```
 
@@ -110,8 +111,35 @@ cd frontend && npm install && npm start
 
 Both still need Postgres and Keycloak; `docker compose up db keycloak` is the easy way.
 
+## Checks
+
+```bash
+cd frontend && npm test    # store logic: scoping, section building, midpoint reorder
+./e2e/run.sh               # real browser against a running stack — needs docker compose up
+```
+
+`e2e/smoke.mjs` logs in through Keycloak, builds a list, a group and three tasks,
+completes one, edits another in the drawer, then **reloads** and asserts the state came
+back — that reload is the point, since it is what proves nothing lives only in memory.
+It clears the demo account through the API first, so it is repeatable. Browsers come
+from the Playwright image; the host only needs the npm package, which `run.sh` installs.
+Screenshots are written next to the script and are gitignored.
+
+There are no backend unit tests. The API is covered end to end by the smoke test; add
+pytest if the routers ever grow logic worth isolating.
+
 ## Environment notes
 
-This machine currently cannot run the stack end to end: the user is not in the `docker`
-group (`sudo usermod -aG docker $USER`, then re-login) and `python3-venv` / `pip` are not
-installed (`sudo apt install python3-venv python3-pip`). The Angular build runs fine.
+Docker works on this machine and the whole stack has been verified running. Python
+tooling has not been installed on the host (`sudo apt install python3-venv python3-pip`),
+so the backend can only be run through Docker here — which is the normal path anyway.
+
+Two Keycloak facts worth remembering, both hit during setup:
+
+- Keycloak 26's declarative user profile makes email, first name and last name required.
+  A user created through the admin API without them cannot get a token
+  (`invalid_grant: Account is not fully set up`). The registration form collects them,
+  so self-service signup is unaffected.
+- `KC_HOSTNAME` fixes the issuer in tokens. It must stay `http://localhost:8080` so the
+  browser's token matches `KEYCLOAK_ISSUER`; the backend reaches the JWKS separately
+  through `KEYCLOAK_INTERNAL_ISSUER`.

@@ -33,8 +33,4 @@ export class Auth {
   logout(): void {
     void this.keycloak.logout({ redirectUri: window.location.origin });
   }
-
-  account(): void {
-    void this.keycloak.accountManagement();
-  }
 }
