@@ -149,10 +149,10 @@ export class TasksPage implements OnInit {
     if (this.store.view() === 'dates') {
       await this.store.moveInto({ due: this.store.bucketDue(section.id) });
     } else {
-      await this.store.moveInto({
-        group_name: section.id,
-        list_id: this.store.scopeList()?.id ?? null,
-      });
+      const list = this.store.scopeList();
+      await this.store.moveInto(
+        list ? { group_name: section.id, list_id: list.id } : { group_name: section.id },
+      );
     }
   }
 

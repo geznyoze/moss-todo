@@ -115,14 +115,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.nav .remove {
-  display: none;
-  color: var(--text-faint);
-  font-size: 15px;
-  line-height: 1;
+.nav-row {
+  display: flex;
+  align-items: center;
 }
-.nav:hover .remove {
-  display: inline;
+.nav-row .nav {
+  flex: 1;
+  min-width: 0;
+}
+.nav-row .remove {
+  visibility: hidden;
+}
+.nav-row:hover .remove,
+.nav-row:focus-within .remove {
+  visibility: visible;
 }
 .new-list {
   display: flex;

@@ -36,14 +36,15 @@
 
       <div class="eyebrow spaced">Lists</div>
       @for (l of store.listNav(); track l.id) {
-        <button type="button" class="nav" [class.on]="store.scope() === l.id" (click)="store.scope.set(l.id)">
-          <span class="dot" [style.background]="'hsl(' + l.hue + ' 40% 46%)'"></span>
-          <span class="nav-name">{{ l.name }}</span>
-          <span class="num">{{ l.count }}</span>
-          <span class="remove" role="button" tabindex="0" title="Delete list"
-                (click)="$event.stopPropagation(); store.removeList(l.id)"
-                (keydown.enter)="$event.stopPropagation(); store.removeList(l.id)">×</span>
-        </button>
+        <div class="nav-row">
+          <button type="button" class="nav" [class.on]="store.scope() === l.id" (click)="store.scope.set(l.id)">
+            <span class="dot" [style.background]="'hsl(' + l.hue + ' 40% 46%)'"></span>
+            <span class="nav-name">{{ l.name }}</span>
+            <span class="num">{{ l.count }}</span>
+          </button>
+          <button type="button" class="x sm remove" title="Delete list"
+                  (click)="store.removeList(l.id)">×</button>
+        </div>
       }
 
       <form class="new-list" (ngSubmit)="addList()">
