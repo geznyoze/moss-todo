@@ -157,8 +157,9 @@
                       </div>
                     </div>
 
-                    <button type="button" class="swatch" [style.background]="accent(task)"
-                            title="Change colour" (click)="store.selectedId.set(task.id)"></button>
+                    <button type="button" class="gear" title="Task settings"
+                            [attr.aria-label]="'Settings for ' + task.title"
+                            (click)="store.selectedId.set(task.id)">⚙</button>
                     <button type="button" class="x" title="Delete task"
                             (click)="store.remove(task.id)">×</button>
                   </div>
