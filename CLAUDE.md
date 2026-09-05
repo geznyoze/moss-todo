@@ -158,7 +158,7 @@ docker compose logs tailscale     # prints the public URL once it is serving
   foreign key: rows predating local auth point at Keycloak subjects that no longer
   exist, and a constraint would fail on any database still holding them.
 - **The design is the spec.** Colours, spacing and type come from the design source;
-  `src/styles.css` holds them as tokens. Change a token, not a hard-coded hex.
+  `src/styles.css` holds them as tokens (the accent is purple; the surfaces stay moss). Change a token, not a hard-coded hex.
 - **Schema changes go through Alembic.** Edit `backend/app/models.py`, then
   `alembic revision --autogenerate -m "..."`. Never edit an applied migration; add a new
   one. `entrypoint.sh` runs `alembic upgrade head` on every backend boot.

@@ -57,8 +57,8 @@
   color: var(--text-nav);
 }
 .tabs button.on {
-  background: var(--moss);
-  color: var(--on-moss);
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -190,7 +190,7 @@ h1 {
 .fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--moss);
+  background: var(--accent);
   transition: width 220ms ease;
 }
 .error {
@@ -379,10 +379,10 @@ h1 {
   height: 8px;
 }
 .column-head .dot.doing {
-  background: var(--moss);
+  background: var(--accent);
 }
 .column-head .dot.done {
-  background: var(--moss-light);
+  background: var(--accent-light);
 }
 .column-name {
   font-size: 12.5px;

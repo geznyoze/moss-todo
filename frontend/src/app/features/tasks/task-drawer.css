@@ -166,7 +166,7 @@
 }
 input[type='range'] {
   width: 100%;
-  accent-color: var(--moss);
+  accent-color: var(--accent);
 }
 .preset {
   width: 22px;

@@ -25,10 +25,10 @@
   --text-label: #7f8f71;
   --text-faint: #75856a;
 
-  --moss: #86ad64;
-  --moss-hover: #9cc378;
-  --moss-light: #a9c98b;
-  --on-moss: #12170f;
+  --accent: #a385cf;
+  --accent-hover: #b79ae0;
+  --accent-light: #c2aae6;
+  --on-accent: #150f1c;
 
   --danger: #e8a493;
   --danger-line: #4c312a;
@@ -73,7 +73,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--moss-light);
+  outline: 2px solid var(--accent-light);
   outline-offset: 2px;
 }
 
@@ -91,7 +91,7 @@ textarea {
 input:not([type='range']):focus,
 select:focus,
 textarea:focus {
-  border-color: var(--moss-light);
+  border-color: var(--accent-light);
   outline: none;
 }
 
@@ -129,8 +129,8 @@ textarea:focus {
 
 .accent {
   border: none;
-  background: var(--moss);
-  color: var(--on-moss);
+  background: var(--accent);
+  color: var(--on-accent);
   border-radius: 10px;
   padding: 12px 18px;
   font-size: 13.5px;
@@ -139,7 +139,7 @@ textarea:focus {
 }
 
 .accent:hover {
-  background: var(--moss-hover);
+  background: var(--accent-hover);
 }
 
 .accent.square {
@@ -159,12 +159,12 @@ textarea:focus {
 }
 
 .ghost:hover {
-  border-color: var(--moss-light);
+  border-color: var(--accent-light);
   background: var(--topbar);
 }
 
 .ghost.on {
-  border-color: #4c5f3d;
+  border-color: #574a6d;
   background: var(--nav-on);
 }
 
@@ -192,9 +192,9 @@ textarea:focus {
 }
 
 .chip.on {
-  border-color: var(--moss);
-  background: var(--moss);
-  color: var(--on-moss);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .check {
@@ -204,7 +204,7 @@ textarea:focus {
   border-radius: 6px;
   border: 1.5px solid rgb(230 237 221 / 32%);
   background: rgb(255 255 255 / 6%);
-  color: var(--on-moss);
+  color: var(--on-accent);
   font-size: 11px;
   line-height: 1;
   display: flex;
@@ -220,8 +220,8 @@ textarea:focus {
 }
 
 .check.sm.on {
-  border-color: var(--moss);
-  background: var(--moss);
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .x {
@@ -252,7 +252,7 @@ textarea:focus {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #3e4d32;
+  background: #453a58;
 }
 
 .swatch {
@@ -311,6 +311,6 @@ textarea:focus {
 }
 
 .prio.med {
-  background: rgb(134 173 100 / 20%);
-  color: var(--moss-light);
+  background: rgb(163 133 207 / 20%);
+  color: var(--accent-light);
 }
