@@ -54,6 +54,16 @@ describe('scoping', () => {
     expect(store.visible().map((x) => x.title)).toEqual(['later']);
   });
 
+  it('keeps progress steady when done tasks are hidden', () => {
+    const store = makeStore();
+    store.tasks.set([task({ done: true }), task({ done: true }), task({}), task({})]);
+
+    expect(store.progress()).toBe(50);
+    store.showDone.set(false);
+    expect(store.visible()).toHaveLength(2);
+    expect(store.progress()).toBe(50);
+  });
+
   it('hides done tasks when showDone is off', () => {
     const store = makeStore();
     store.tasks.set([task({ title: 'a' }), task({ title: 'b', done: true })]);

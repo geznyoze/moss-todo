@@ -46,6 +46,8 @@ class TaskCreate(BaseModel):
     list_id: uuid.UUID | None = None
     group_name: str = Field(default="", max_length=120)
     notes: str = ""
+    # Present so duplicating a finished task keeps it finished.
+    done: bool = False
     due: date | None = None
     priority: Priority = "none"
     status: Status = "backlog"

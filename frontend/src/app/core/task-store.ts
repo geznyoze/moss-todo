@@ -66,20 +66,29 @@ export class TaskStore {
   readonly selected = computed(() => this.tasks().find((t) => t.id === this.selectedId()) ?? null);
   readonly openCount = computed(() => this.tasks().filter((t) => !t.done).length);
 
-  readonly visible = computed(() => {
+  /** Everything in the current scope, done included. */
+  readonly scoped = computed(() => {
     const scope = this.scope();
     const t = today0();
-    let out = this.tasks();
+    const tasks = this.tasks();
 
-    if (scope === 'today') out = out.filter((x) => (dueMs(x.due) ?? Infinity) <= t);
-    else if (scope === 'upcoming') out = out.filter((x) => (dueMs(x.due) ?? -Infinity) > t);
-    else if (scope !== 'all') out = out.filter((x) => x.list_id === scope);
-
-    return this.showDone() ? out : out.filter((x) => !x.done);
+    if (scope === 'today') return tasks.filter((x) => (dueMs(x.due) ?? Infinity) <= t);
+    if (scope === 'upcoming') return tasks.filter((x) => (dueMs(x.due) ?? -Infinity) > t);
+    if (scope === 'all') return tasks;
+    return tasks.filter((x) => x.list_id === scope);
   });
 
+  /** What the rows actually render — `scoped`, minus done tasks when they are hidden. */
+  readonly visible = computed(() =>
+    this.showDone() ? this.scoped() : this.scoped().filter((x) => !x.done),
+  );
+
+  /**
+   * Measured against `scoped`, not `visible`: hiding done tasks is a view preference and
+   * must not change how much of the scope is reported as finished.
+   */
   readonly progress = computed(() => {
-    const all = this.visible();
+    const all = this.scoped();
     if (!all.length) return 0;
     return Math.round((all.filter((t) => t.done).length / all.length) * 100);
   });
