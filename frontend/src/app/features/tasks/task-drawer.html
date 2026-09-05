@@ -1,0 +1,121 @@
+@if (task(); as t) {
+  <aside class="drawer">
+    <header class="head">
+      <span class="swatch sm" [style.background]="css()"></span>
+      <span class="eyebrow grow">Task</span>
+      <button type="button" class="x" (click)="store.selectedId.set(null)">×</button>
+    </header>
+
+    <div class="scroll">
+      <textarea class="task-title" rows="2" [value]="t.title"
+                (change)="patch({ title: value($event) })"></textarea>
+
+      <div class="grid">
+        <label class="field">List
+          <select [value]="t.list_id ?? ''" (change)="patch({ list_id: value($event) || null, group_name: '' })">
+            <option value="">No list</option>
+            @for (l of store.lists(); track l.id) {
+              <option [value]="l.id">{{ l.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">Group
+          <select [value]="t.group_name" (change)="patch({ group_name: value($event) })">
+            @for (g of groupOptions(); track g) {
+              <option [value]="g">{{ g || 'Ungrouped' }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">Due
+          <input type="date" [value]="t.due ?? ''" (change)="patch({ due: value($event) || null })" />
+        </label>
+
+        <label class="field">Status
+          <select [value]="t.status" (change)="patch({ status: $any(value($event)), done: value($event) === 'done' })">
+            @for (s of statuses; track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">Priority</div>
+        <div class="chips">
+          @for (p of priorities; track p.id) {
+            <button type="button" class="chip" [class.on]="t.priority === p.id"
+                    (click)="patch({ priority: p.id })">{{ p.name }}</button>
+          }
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">Repeat</div>
+        <div class="chips">
+          @for (r of recurs; track r.id) {
+            <button type="button" class="chip" [class.on]="t.recurring === r.id"
+                    (click)="patch({ recurring: r.id })">{{ r.name }}</button>
+          }
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">Color</div>
+        <div class="colour">
+          <div #wheel class="wheel" (pointerdown)="wheelDown($event)" (pointermove)="wheelMove($event)"
+               (pointerup)="wheelUp()" (pointercancel)="wheelUp()">
+            <div class="wheel-fade"></div>
+            <div class="knob" [style.left.px]="knob().left" [style.top.px]="knob().top"
+                 [style.background]="css()"></div>
+          </div>
+
+          <div class="colour-side">
+            <div class="row-between"><span>Lightness</span><span>{{ t.color_l }}%</span></div>
+            <input type="range" min="30" max="80" [value]="t.color_l"
+                   (change)="patch({ color_l: +value($event) })" />
+            <div class="chips">
+              @for (p of presets; track p.h) {
+                <button type="button" class="preset" [class.on]="t.color_h === p.h"
+                        [style.background]="'hsl(' + p.h + ' ' + p.s + '% ' + p.l + '%)'"
+                        [attr.aria-label]="'Preset hue ' + p.h"
+                        (click)="patch({ color_h: p.h, color_s: p.s, color_l: p.l })"></button>
+              }
+            </div>
+            <div class="soft">hsl({{ t.color_h }}, {{ t.color_s }}%, {{ t.color_l }}%)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">Notes</div>
+        <textarea class="notes" rows="3" placeholder="Details, links, context" [value]="t.notes"
+                  (change)="patch({ notes: value($event) })"></textarea>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow-row">
+          <span class="eyebrow">Subtasks</span>
+          <span class="faint">{{ subLabel(t) }}</span>
+        </div>
+        @for (s of t.subtasks; track s.id) {
+          <div class="subtask">
+            <button type="button" class="check sm" [class.on]="s.done"
+                    [attr.aria-label]="'Toggle ' + s.title"
+                    (click)="toggleSubtask(s)">{{ s.done ? '✓' : '' }}</button>
+            <span class="sub-title" [class.done]="s.done">{{ s.title }}</span>
+            <button type="button" class="x sm" (click)="removeSubtask(s)">×</button>
+          </div>
+        }
+        <input #sub class="sub-add" placeholder="Add subtask"
+               (keydown.enter)="addSubtask(sub)" (blur)="addSubtask(sub)" />
+      </div>
+    </div>
+
+    <footer class="foot">
+      <button type="button" class="ghost grow" (click)="store.duplicate(t)">Duplicate</button>
+      <button type="button" class="danger grow" (click)="store.remove(t.id)">Delete</button>
+    </footer>
+  </aside>
+}

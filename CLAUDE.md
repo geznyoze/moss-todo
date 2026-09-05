@@ -5,6 +5,10 @@ all wired together with Docker Compose.
 
 ## Layout
 
+The UI is a port of the `Moss Todo` Claude Design project
+(`claude.ai/design/p/44df71e3-6c30-4883-b29d-e9beda5783d6`) — a dark moss palette,
+Newsreader headings over Instrument Sans body, three views and a task drawer.
+
 ```
 backend/     FastAPI + SQLAlchemy 2.0 + Alembic
 frontend/    Angular 22 (standalone, zoneless, signals) + keycloak-js
@@ -36,6 +40,8 @@ Demo login: `demo` / `demo`. Self-registration is enabled on the realm.
   server's response. No localStorage persistence.
 - **Ownership is by Keycloak subject.** Every row carries `user_id` = the token's `sub`,
   and every query filters on it. There is no cross-user read path.
+- **The design is the spec.** Colours, spacing and type come from the design source;
+  `src/styles.css` holds them as tokens. Change a token, not a hard-coded hex.
 - **Schema changes go through Alembic.** Edit `backend/app/models.py`, then
   `alembic revision --autogenerate -m "..."`. Never edit an applied migration; add a new
   one. `entrypoint.sh` runs `alembic upgrade head` on every backend boot.
@@ -57,16 +63,36 @@ app/auth.py       RS256 bearer validation against the realm JWKS
 app/routers/      tasks.py, lists.py
 ```
 
+`GET /api/tasks` returns the user's whole set; scopes, views, grouping and search are
+computed client-side, because all three views need the same rows anyway.
+
+Two deliberate shortcuts, both marked with a `ponytail:` comment in the code:
+
+- **Subtasks are a JSONB array** on `tasks`, not their own table. They are only ever read
+  and written with their parent. Split them out if they ever need to be queried.
+- **`position` is a fractional index.** Dropping a row between two others stores the
+  midpoint of their positions, so a reorder is one `UPDATE` and never a renumbering pass.
+  Positions can only be halved so many times; if a list is reordered thousands of times in
+  the same spot, add a background renumber.
+
 `AUTH_ENABLED=false` bypasses token validation and pins every request to a
 `dev-user` subject. Local debugging only — never set it in a deployed environment.
 
 ## Frontend
 
 ```
-src/app/core/       auth.ts (keycloak-js), auth-interceptor.ts, api.ts, models.ts
-src/app/features/   tasks/ — task-store.ts holds all screen state
+src/app/core/       auth.ts (keycloak-js), auth-interceptor.ts, api.ts, models.ts,
+                    dates.ts, task-store.ts — every piece of screen state
+src/app/features/   tasks/ — tasks-page (shell, sidebar, list/board/dates), task-drawer
 src/environments/   apiUrl + keycloak config; production.ts swapped in at build time
 ```
+
+Drag and drop is native HTML5 `draggable` — no CDK. The colour wheel is a
+`conic-gradient` plus a little pointer maths; it previews locally while dragging and
+writes once on pointer-up, so a drag is one request, not a hundred.
+
+Drawer fields write on the native `change` event (fires on blur, or on release for the
+lightness slider) rather than on every keystroke.
 
 Bootstrap blocks on `provideAppInitializer(() => inject(Auth).init())` with
 `onLoad: 'login-required'`, so no request can leave before there is a session.

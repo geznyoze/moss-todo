@@ -1,0 +1,212 @@
+.drawer {
+  flex: none;
+  width: 340px;
+  border-left: 1px solid var(--line);
+  background: var(--drawer);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 57px;
+  align-self: stretch;
+  max-height: calc(100vh - 57px);
+  animation: slide-in 180ms ease;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.task-title {
+  min-height: 78px;
+  border-color: transparent;
+  border-radius: 10px;
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1.3;
+  resize: vertical;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-label);
+}
+
+.field > * {
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eyebrow-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Colour picker */
+.colour {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.wheel {
+  position: relative;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  flex: none;
+  cursor: crosshair;
+  touch-action: none;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 14%);
+  background: conic-gradient(
+    from 90deg,
+    hsl(0 85% 55%),
+    hsl(60 85% 55%),
+    hsl(120 85% 55%),
+    hsl(180 85% 55%),
+    hsl(240 85% 55%),
+    hsl(300 85% 55%),
+    hsl(360 85% 55%)
+  );
+}
+.wheel-fade {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, #fff 4%, rgb(255 255 255 / 0%) 68%);
+}
+.knob {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+  pointer-events: none;
+}
+.colour-side {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+input[type='range'] {
+  width: 100%;
+  accent-color: var(--moss);
+}
+.preset {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  padding: 0;
+  border: 2px solid rgb(255 255 255 / 28%);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+}
+.preset.on {
+  border-color: var(--text);
+}
+
+.notes {
+  min-height: 78px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+/* Subtasks */
+.subtask {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--raised);
+}
+.sub-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.sub-add {
+  border: 1px dashed var(--line-dashed);
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.foot {
+  display: flex;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line-soft);
+  background: var(--drawer);
+}
+.foot .ghost {
+  padding: 10px;
+  border-radius: 9px;
+  font-size: 12.5px;
+}
+
+@media (width < 900px) {
+  .drawer {
+    position: fixed;
+    inset: 57px 0 0 0;
+    width: 100%;
+    max-height: none;
+    z-index: 30;
+  }
+}

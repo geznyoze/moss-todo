@@ -1,103 +1,205 @@
-<div class="shell">
-  <aside class="sidebar">
+<div class="app">
+  <header class="topbar">
     <div class="brand">
       <span class="mark"></span>
-      <span>Moss</span>
+      <span class="wordmark">Moss</span>
+      <span class="count">{{ store.openCount() }} open</span>
     </div>
 
-    <nav class="lists">
-      <button type="button" class="list-item" [class.active]="store.selectedListId() === null"
-              (click)="selectList(null)">
-        All tasks
-      </button>
+    <span class="spacer"></span>
 
-      @for (list of store.lists(); track list.id) {
-        <div class="list-row">
-          <button type="button" class="list-item" [class.active]="store.selectedListId() === list.id"
-                  (click)="selectList(list.id)">
-            {{ list.name }}
-          </button>
-          <button type="button" class="icon danger" title="Delete list"
-                  (click)="store.removeList(list.id)">×</button>
+    <div class="tabs">
+      @for (tab of ['list', 'board', 'dates']; track tab) {
+        <button type="button" [class.on]="store.view() === tab" (click)="setView($any(tab))">
+          {{ tab === 'list' ? 'List' : tab === 'board' ? 'Board' : 'Dates' }}
+        </button>
+      }
+    </div>
+
+    <button type="button" class="ghost" [class.on]="!store.showDone()"
+            (click)="store.showDone.set(!store.showDone())">
+      {{ store.showDone() ? 'Hide done' : 'Show done' }}
+    </button>
+    <button type="button" class="ghost" (click)="store.sidebarOpen.set(!store.sidebarOpen())">Lists</button>
+    <button type="button" class="ghost" (click)="auth.logout()">{{ auth.username() ?? 'Sign out' }}</button>
+  </header>
+
+  <div class="body">
+    <aside class="sidebar" [class.hidden]="!store.sidebarOpen()">
+      <div class="eyebrow">Views</div>
+      @for (v of store.smartViews(); track v.id) {
+        <button type="button" class="nav" [class.on]="store.scope() === v.id" (click)="store.scope.set(v.id)">
+          <span class="nav-name">{{ v.name }}</span>
+          <span class="num">{{ v.count }}</span>
+        </button>
+      }
+
+      <div class="eyebrow spaced">Lists</div>
+      @for (l of store.listNav(); track l.id) {
+        <button type="button" class="nav" [class.on]="store.scope() === l.id" (click)="store.scope.set(l.id)">
+          <span class="dot" [style.background]="'hsl(' + l.hue + ' 40% 46%)'"></span>
+          <span class="nav-name">{{ l.name }}</span>
+          <span class="num">{{ l.count }}</span>
+          <span class="remove" role="button" tabindex="0" title="Delete list"
+                (click)="$event.stopPropagation(); store.removeList(l.id)"
+                (keydown.enter)="$event.stopPropagation(); store.removeList(l.id)">×</span>
+        </button>
+      }
+
+      <form class="new-list" (ngSubmit)="addList()">
+        <input placeholder="New list" name="listDraft"
+               [ngModel]="listDraft()" (ngModelChange)="listDraft.set($event)" />
+        <button type="submit" class="accent square">+</button>
+      </form>
+
+      <span class="spacer"></span>
+      <p class="hint">Drag rows to reorder or move between groups and columns.</p>
+    </aside>
+
+    <main class="main">
+      <div class="scope">
+        <div>
+          <h1>{{ scopeTitle }}</h1>
+          <div class="sub">{{ scopeSub }}</div>
+        </div>
+        <span class="spacer"></span>
+        <div class="progress">
+          <div class="track"><div class="fill" [style.width.%]="store.progress()"></div></div>
+          <span class="num">{{ store.progress() }}%</span>
+        </div>
+      </div>
+
+      @if (store.error(); as error) {
+        <p class="error" role="alert">{{ error }}</p>
+      }
+
+      <form class="quick" (ngSubmit)="addQuick()">
+        <input placeholder="Add a task and press Enter" name="quickDraft"
+               [ngModel]="quickDraft()" (ngModelChange)="quickDraft.set($event)" />
+        <button type="submit" class="accent">Add task</button>
+      </form>
+
+      @if (store.loading()) {
+        <p class="empty">Loading…</p>
+      } @else if (store.view() === 'board') {
+        <div class="board">
+          @for (col of store.columns(); track col.id) {
+            <section class="column" (dragover)="allowDrop($event)" (drop)="dropOnColumn(col, $event)">
+              <div class="column-head">
+                <span class="dot" [class.done]="col.id === 'done'" [class.doing]="col.id === 'doing'"></span>
+                <span class="column-name">{{ col.name }}</span>
+                <span class="num">{{ col.tasks.length }}</span>
+              </div>
+              <div class="cards">
+                @for (task of col.tasks; track task.id) {
+                  <article class="card" draggable="true"
+                           [style.background]="tint(task)" [style.border-color]="edge(task)"
+                           [class.dragging]="store.dragId() === task.id"
+                           (dragstart)="onDragStart(task, $event)" (dragend)="store.dragId.set(null)"
+                           (dragover)="allowDrop($event)" (drop)="dropOnTask(task, $event)"
+                           (click)="store.selectedId.set(task.id)">
+                    <div class="card-top">
+                      <button type="button" class="check" [class.on]="task.done"
+                              [style.border-color]="task.done ? accent(task) : ''"
+                              [style.background]="task.done ? accent(task) : ''"
+                              [attr.aria-label]="'Toggle ' + task.title"
+                              (click)="$event.stopPropagation(); store.toggle(task)">{{ task.done ? '✓' : '' }}</button>
+                      <div class="title" [class.done]="task.done">{{ task.title }}</div>
+                    </div>
+                    <div class="meta indent">
+                      <ng-container *ngTemplateOutlet="badges; context: { $implicit: task }" />
+                    </div>
+                  </article>
+                }
+                @if (!col.tasks.length) {
+                  <div class="drop-hint">Drop a task here</div>
+                }
+              </div>
+            </section>
+          }
+        </div>
+      } @else {
+        <div class="sections">
+          @for (sec of store.sections(); track sec.key) {
+            <section class="section">
+              <div class="section-head" (dragover)="allowDrop($event)" (drop)="dropOnSection(sec, $event)">
+                <button type="button" class="section-toggle" (click)="store.toggleSection(sec.key)">
+                  <span class="chevron" [class.open]="store.isOpen(sec.key)">›</span>
+                  <span class="section-title">{{ sec.title }}</span>
+                  <span class="num">{{ sec.tasks.length }}</span>
+                </button>
+                @if (sec.canRemove && store.scopeList(); as list) {
+                  <button type="button" class="ungroup" (click)="store.removeGroup(list, sec.id)">Ungroup</button>
+                }
+              </div>
+
+              @if (store.isOpen(sec.key)) {
+                @for (task of sec.tasks; track task.id) {
+                  <div class="row" draggable="true" [style.background]="tint(task)"
+                       [class.dragging]="store.dragId() === task.id"
+                       (dragstart)="onDragStart(task, $event)" (dragend)="store.dragId.set(null)"
+                       (dragover)="allowDrop($event)" (drop)="dropOnTask(task, $event)">
+                    <button type="button" class="check" [class.on]="task.done"
+                            [style.border-color]="task.done ? accent(task) : ''"
+                            [style.background]="task.done ? accent(task) : ''"
+                            [attr.aria-label]="'Toggle ' + task.title"
+                            (click)="store.toggle(task)">{{ task.done ? '✓' : '' }}</button>
+
+                    <div class="row-body" (click)="store.selectedId.set(task.id)">
+                      <div class="title" [class.done]="task.done">{{ task.title }}</div>
+                      <div class="meta">
+                        <ng-container *ngTemplateOutlet="badges; context: { $implicit: task }" />
+                        @if (task.notes) { <span class="faint">note</span> }
+                        @if (store.scope() === 'all' || store.scope() === 'today' || store.scope() === 'upcoming') {
+                          <span class="faint">{{ listName(task.list_id) }}</span>
+                        }
+                      </div>
+                    </div>
+
+                    <button type="button" class="swatch" [style.background]="accent(task)"
+                            title="Change colour" (click)="store.selectedId.set(task.id)"></button>
+                    <button type="button" class="x" title="Delete task"
+                            (click)="store.remove(task.id)">×</button>
+                  </div>
+                }
+
+                @if (sec.canAdd) {
+                  <form class="section-add" (ngSubmit)="addToSection(sec)">
+                    <input placeholder="Add to this group" [name]="'draft-' + sec.key"
+                           [ngModel]="sectionDrafts()[sec.key] ?? ''"
+                           (ngModelChange)="setSectionDraft(sec.key, $event)" />
+                  </form>
+                } @else if (!sec.tasks.length) {
+                  <p class="section-empty">Nothing here yet.</p>
+                }
+              }
+            </section>
+          }
+
+          @if (store.view() === 'list' && store.scopeList()) {
+            <form class="new-group" (ngSubmit)="addGroup()">
+              <input placeholder="New group" name="groupDraft"
+                     [ngModel]="groupDraft()" (ngModelChange)="groupDraft.set($event)" />
+              <button type="submit" class="ghost">Add group</button>
+            </form>
+          }
         </div>
       }
-    </nav>
+    </main>
 
-    <form class="new-list" (ngSubmit)="addList()">
-      <input placeholder="New list" [ngModel]="newListName()" (ngModelChange)="newListName.set($event)"
-             name="newList" />
-      <button type="submit" class="icon">+</button>
-    </form>
-
-    <div class="account">
-      <span class="who">{{ auth.username() ?? 'Signed in' }}</span>
-      <button type="button" class="link" (click)="auth.logout()">Sign out</button>
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="head">
-      <div>
-        <h1>{{ listName(store.selectedListId()) ?? 'All tasks' }}</h1>
-        <p class="sub">{{ store.remaining() }} remaining · {{ store.doneCount() }} done</p>
-      </div>
-      <input class="search" type="search" placeholder="Search tasks"
-             [ngModel]="store.search()" (ngModelChange)="store.search.set($event)" name="search" />
-    </header>
-
-    @if (store.error(); as error) {
-      <p class="error" role="alert">{{ error }}</p>
+    @if (store.selected()) {
+      <app-task-drawer />
     }
-
-    <form class="composer" (ngSubmit)="addTask()">
-      <input class="title" placeholder="Add a task…" required
-             [ngModel]="draftTitle()" (ngModelChange)="draftTitle.set($event)" name="title" />
-      <input class="date" type="date" [ngModel]="draftDue()" (ngModelChange)="draftDue.set($event)"
-             name="due" />
-      <button type="submit" class="primary">Add</button>
-    </form>
-
-    <div class="filters">
-      @for (option of ['all', 'active', 'completed']; track option) {
-        <button type="button" class="chip" [class.active]="store.filter() === option"
-                (click)="setFilter($any(option))">{{ option }}</button>
-      }
-      @if (store.doneCount() > 0) {
-        <button type="button" class="link clear" (click)="store.clearCompleted()">Clear completed</button>
-      }
-    </div>
-
-    @if (store.loading()) {
-      <p class="empty">Loading…</p>
-    } @else if (store.visibleTasks().length === 0) {
-      <p class="empty">Nothing here yet.</p>
-    } @else {
-      <ul class="tasks">
-        @for (task of store.visibleTasks(); track task.id) {
-          <li class="task" [class.done]="task.completed">
-            <input type="checkbox" [checked]="task.completed" (change)="store.toggle(task)"
-                   [attr.aria-label]="'Toggle ' + task.title" />
-
-            @if (editingId() === task.id) {
-              <input class="edit" [ngModel]="editingTitle()" (ngModelChange)="editingTitle.set($event)"
-                     name="edit" (blur)="commitEdit(task)" (keydown.enter)="commitEdit(task)"
-                     (keydown.escape)="cancelEdit()" autofocus />
-            } @else {
-              <button type="button" class="task-title" (click)="startEdit(task)">{{ task.title }}</button>
-            }
-
-            @if (due(task); as d) {
-              <span class="due" [class.overdue]="d.overdue">{{ d.label }}</span>
-            }
-            @if (!store.selectedListId() && listName(task.list_id); as name) {
-              <span class="tag">{{ name }}</span>
-            }
-
-            <button type="button" class="icon danger" title="Delete task"
-                    (click)="store.remove(task.id)">×</button>
-          </li>
-        }
-      </ul>
-    }
-  </main>
+  </div>
 </div>
+
+<ng-template #badges let-task>
+  @if (task.due) {
+    <span class="due" [class.overdue]="overdue(task)">{{ dueLabel(task.due) }}</span>
+  }
+  @if (task.priority !== 'none') {
+    <span class="prio" [class]="task.priority">{{ priorityName(task) }}</span>
+  }
+  @if (task.subtasks.length) { <span class="soft num">{{ subLabel(task) }}</span> }
+  @if (task.recurring !== 'none') { <span class="soft">{{ task.recurring }}</span> }
+</ng-template>
