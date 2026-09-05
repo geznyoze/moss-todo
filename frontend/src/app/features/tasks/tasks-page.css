@@ -310,6 +310,13 @@ h1 {
 .check {
   margin-top: 1px;
 }
+/* The row's in-progress toggle: a .chip, sized down to sit on one row. */
+.doing {
+  flex: none;
+  align-self: center;
+  padding: 4px 9px;
+  font-size: 11px;
+}
 .section-add {
   padding: 10px 14px 12px;
   border-top: 1px solid var(--line-row);

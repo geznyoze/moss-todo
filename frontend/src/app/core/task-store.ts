@@ -200,6 +200,11 @@ export class TaskStore {
     await this.patch(task.id, { done: !task.done, status: task.done ? 'next' : 'done' });
   }
 
+  /** The row's one-click "I am on this". Off parks the task in 'next', where toggle() leaves it too. */
+  async toggleDoing(task: Task): Promise<void> {
+    await this.patch(task.id, { status: task.status === 'doing' ? 'next' : 'doing' });
+  }
+
   async remove(id: string): Promise<void> {
     await this.run(async () => {
       await this.call(this.api.deleteTask(id));

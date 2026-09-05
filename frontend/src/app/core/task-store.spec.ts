@@ -180,3 +180,19 @@ describe('dueLabel', () => {
     expect(dueLabel({ due: null, due_time: null })).toBe('');
   });
 });
+
+describe('toggleDoing', () => {
+  it('moves a task into "doing" and back out to "next"', async () => {
+    const sent: Partial<Task>[] = [];
+    const store = makeStore({
+      patchTask: (_id: string, patch: Partial<Task>) => {
+        sent.push(patch);
+        return of(task({ ...patch }));
+      },
+    } as Partial<Api>);
+
+    await store.toggleDoing(task({ status: 'backlog' }));
+    await store.toggleDoing(task({ status: 'doing' }));
+    expect(sent).toEqual([{ status: 'doing' }, { status: 'next' }]);
+  });
+});

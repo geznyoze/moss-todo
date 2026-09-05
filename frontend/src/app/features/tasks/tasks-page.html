@@ -157,6 +157,12 @@
                       </div>
                     </div>
 
+                    @if (!task.done) {
+                      <button type="button" class="chip doing" [class.on]="task.status === 'doing'"
+                              [attr.aria-pressed]="task.status === 'doing'"
+                              [title]="task.status === 'doing' ? 'Move out of progress' : 'Mark in progress'"
+                              (click)="store.toggleDoing(task)">Doing</button>
+                    }
                     <button type="button" class="x" title="Delete task"
                             (click)="store.remove(task.id)">×</button>
                   </div>
